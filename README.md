@@ -4,10 +4,23 @@ Aplikasi web pendampingan les privat untuk siswa SD (Kelas 1 - 3) berbasis **Nex
 
 ---
 
+## 🖼️ Tampilan Aplikasi
+
+### 1. Landing Page Utama
+![Preview Home](./public/preview-home.png)
+
+### 2. Form Pendaftaran (/daftar)
+![Preview Daftar](./public/preview-daftar.png)
+
+### 3. FAQ & Informasi
+![Preview FAQ](./public/preview-FAQ.png)
+
+---
+
 ## 🚀 Fitur Utama
 
 - **Landing Page Responsif**: Tampilan modern dan ramah anak dengan *layout zebra-striping* (selang-seling warna section) dan navbar *sticky*.
-- **Formulir Pendaftaran (`/daftar`)**: Form pendaftaran siswa baru yang mengumpulkan data nama anak, jenjang kelas, email, dan nomor WhatsApp orang tua.
+- **Formulir Pendaftaran (`/daftar`)**: Form pendaftaran siswa baru yang mengumpulkan data nama anak, jenjang kelas, email, dan nomor WhatsApp orang tua dilengkapi tombol navigasi batal.
 - **Halaman Login (`/login`)**: Akses portal masuk untuk Cikgu (admin) dan orang tua murid.
 - **Desain Ramah Mata**: Menggunakan palet warna slate dan tosca/teal untuk menjaga kenyamanan visual pengguna.
 
@@ -24,7 +37,21 @@ Aplikasi web pendampingan les privat untuk siswa SD (Kelas 1 - 3) berbasis **Nex
 
 ## 💻 Cara Menjalankan Proyek Secara Lokal
 
-1. **Clone repository ini**:
-   ```bash
-   git clone [https://github.com/Pramana19/ruangbelajar-cikgu.git](https://github.com/Pramana19/ruangbelajar-cikgu.git)
+Jika ingin menjalankan proyek ini di komputer lokal, ikuti langkah-langkah berikut:
+
+1. Clone repository ini:
+   git clone https://github.com/Pramana19/ruangbelajar-cikgu.git
    cd ruangbelajar-cikgu
+
+2. Install dependensi:
+   npm install
+
+3. Jalankan server pengembangan:
+   npm run dev
+
+4. Buka di browser:
+   Akses http://localhost:3000 untuk melihat hasilnya di browser.
+
+---
+
+© 2026 RuangBelajar Cikgu. Hak Cipta Dilindungi.
