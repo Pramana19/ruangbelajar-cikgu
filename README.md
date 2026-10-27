@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 RuangBelajar Cikgu - Landing Page & Web App MVP
 
-## Getting Started
+Aplikasi web pendampingan les privat untuk siswa SD (Kelas 1 - 3) berbasis **Next.js (App Router)** dan **Tailwind CSS**. Didesain khusus dengan pendekatan *mobile-first*, antarmuka yang ramah di mata (*light-mode design*), serta tata letak modular yang responsif.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Fitur Utama
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Landing Page Responsif**: Tampilan modern dan ramah anak dengan *layout zebra-striping* (selang-seling warna section) dan navbar *sticky*.
+- **Formulir Pendaftaran (`/daftar`)**: Form pendaftaran siswa baru yang mengumpulkan data nama anak, jenjang kelas, email, dan nomor WhatsApp orang tua.
+- **Halaman Login (`/login`)**: Akses portal masuk untuk Cikgu (admin) dan orang tua murid.
+- **Desain Ramah Mata**: Menggunakan palet warna slate dan tosca/teal untuk menjaga kenyamanan visual pengguna.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Teknologi yang Digunakan
 
-## Learn More
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Language**: TypeScript
+- **Icons & Typography**: Font Geist Sans & Geist Mono
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 💻 Cara Menjalankan Proyek Secara Lokal
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Clone repository ini**:
+   ```bash
+   git clone [https://github.com/Pramana19/ruangbelajar-cikgu.git](https://github.com/Pramana19/ruangbelajar-cikgu.git)
+   cd ruangbelajar-cikgu
