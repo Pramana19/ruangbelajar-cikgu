@@ -28,7 +28,7 @@ export default function HowToRegister() {
         </div>
 
         <div className="text-center pt-2">
-          <Link href="/daftar" className="inline-block px-8 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-md transition-all">
+          <Link href="/daftar" className="inline-block px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md transition-all">
             Daftar Sekarang
           </Link>
         </div>
