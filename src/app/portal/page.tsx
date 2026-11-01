@@ -1,16 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import Navbar from "../components/Navbar";
 import StudentProfileCard from "./components/StudentProfileCard";
 import TokenClaimWidget from "./components/TokenClaimWidget";
 import AttendanceHistory from "./components/AttendanceHistory";
+import JadwalTerdekatWidget from "./components/JadwalTerdekatWidget";
 
 export default function PortalSiswaPage() {
   const [userPoints, setUserPoints] = useState(25);
   const [isClaimedToday, setIsClaimedToday] = useState(false);
 
-  // Token resmi yang sedang di-generate Cikgu di /admin
   const ACTIVE_TOKEN = "CIKGU28OCT";
 
   const handleSuccessClaim = () => {
@@ -19,20 +18,22 @@ export default function PortalSiswaPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 flex flex-col">
-      <Navbar />
+    <div className="max-w-4xl w-full mx-auto space-y-6">
+      <StudentProfileCard points={userPoints} />
 
-      <div className="max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-6">
-        <StudentProfileCard points={userPoints} />
-
-        <TokenClaimWidget
-          activeToken={ACTIVE_TOKEN}
-          isClaimed={isClaimedToday}
-          onSuccessClaim={handleSuccessClaim}
-        />
-
-        <AttendanceHistory isClaimed={isClaimedToday} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <TokenClaimWidget
+            activeToken={ACTIVE_TOKEN}
+            isClaimed={isClaimedToday}
+            onSuccessClaim={handleSuccessClaim}
+          />
+          <JadwalTerdekatWidget />
+        </div>
+        <div>
+          <AttendanceHistory isClaimed={isClaimedToday} />
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
