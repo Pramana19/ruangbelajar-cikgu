@@ -16,7 +16,7 @@ export default function PortalSidebar({ isOpen, onToggleOpen, onCloseMobile }: P
     const isActive = pathname === path;
     return isActive
       ? "flex items-center gap-3 px-3 py-2.5 rounded-lg bg-teal-600 text-white font-medium text-sm transition-colors"
-      : "flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-yellow-600 font-medium text-sm transition-colors";
+      : "flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-teal-400 hover:bg-slate-700 font-medium text-sm transition-colors";
   };
 
   return (
