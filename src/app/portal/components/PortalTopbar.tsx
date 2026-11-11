@@ -7,9 +7,9 @@ export default function PortalTopbar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   return (
-    <header className="bg-white border-b border-slate-200 py-3 px-4 sm:px-6 flex items-center justify-between z-30">
+    <header className="bg-violet-800 border-b border-slate-200 py-3 px-4 sm:px-6 flex items-center justify-between z-30">
       <div className="flex items-center gap-3">
-        <h1 className="text-xs sm:text-sm font-semibold text-slate-600 truncate">
+        <h1 className="text-xs sm:text-sm font-semibold text-slate-100 truncate">
           Overview Portal Siswa
         </h1>
       </div>
@@ -17,12 +17,12 @@ export default function PortalTopbar() {
       <div className="relative">
         <button
           onClick={() => setIsProfileOpen(!isProfileOpen)}
-          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors focus:outline-none"
+          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-yellow-600 transition-colors focus:outline-none"
         >
-          <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">
+          <div className="w-6 h-6 rounded-full bg--600 text-white flex items-center justify-center text-xs font-bold">
             SR
           </div>
-          <span className="hidden sm:inline text-xs font-semibold text-slate-700">
+          <span className="hidden sm:inline text-xs font-semibold text-slate-100">
             Siti Rahma
           </span>
           <svg

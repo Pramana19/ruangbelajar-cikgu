@@ -15,8 +15,8 @@ export default function PortalSidebar({ isOpen, onToggleOpen, onCloseMobile }: P
   const getLinkClass = (path: string) => {
     const isActive = pathname === path;
     return isActive
-      ? "flex items-center gap-3 px-3 py-2.5 rounded-lg bg-purple-600 text-white font-medium text-sm transition-colors"
-      : "flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 font-medium text-sm transition-colors";
+      ? "flex items-center gap-3 px-3 py-2.5 rounded-lg bg-teal-600 text-white font-medium text-sm transition-colors"
+      : "flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-yellow-600 font-medium text-sm transition-colors";
   };
 
   return (
@@ -30,14 +30,14 @@ export default function PortalSidebar({ isOpen, onToggleOpen, onCloseMobile }: P
       <div className="p-3.5 border-b border-slate-800 flex items-center gap-3 shrink-0">
         <button
           onClick={onToggleOpen}
-          className="w-9 h-9 rounded-lg bg-purple-500 hover:bg-purple-400 active:scale-95 flex items-center justify-center font-bold text-white text-lg shrink-0 transition-all focus:outline-none cursor-pointer shadow-md"
+          className="w-9 h-9 rounded-lg bg-teal-600 hover:bg-yellow-500 active:scale-95 flex items-center justify-center font-bold text-white text-lg shrink-0 transition-all focus:outline-none cursor-pointer shadow-md"
           title="Klik untuk buka/tutup menu"
         >
           S
         </button>
         <div className={`transition-opacity duration-200 overflow-hidden ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none hidden"}`}>
           <h2 className="font-bold text-base leading-tight whitespace-nowrap">RuangBelajar</h2>
-          <p className="text-xs text-purple-400 whitespace-nowrap">Portal Siswa</p>
+          <p className="text-xs text-teal-400 whitespace-nowrap">Portal Siswa</p>
         </div>
       </div>
 
