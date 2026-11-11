@@ -12,7 +12,7 @@ export default function Navbar() {
   const isPortal = pathname.startsWith("/portal");
 
   return (
-    <header className="w-full bg-violet-800 border-b border-slate-100 py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50 shadow-xs">
+    <header className="w-full bg-violet-800 border-b border-slate-100 py-3 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50 shadow-xs">
       <div className="flex items-center gap-2">
         <span className="w-5 h-5 bg-teal-500 rounded-full"></span>
         <Link href={isPortal ? "/portal" : "/"} className="font-bold text-lg text-white tracking-wide">
