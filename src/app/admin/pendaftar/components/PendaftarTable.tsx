@@ -25,17 +25,18 @@ export default function PendaftarTable({
   onUpdateStatus?: (id: number, status: any) => void; // Opsional karena kini dikelola via modal
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-slate-50 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm text-slate-600 whitespace-nowrap">
-          <thead className="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider border-b border-slate-200">
+          {/* PERBAIKAN: thead disulap menjadi Header Tebal Gradien dengan teks putih */}
+          <thead className="bg-gradient-to-r from-indigo-700 to-cyan-600 text-white text-xs uppercase tracking-wider">
             <tr>
-              <th className="py-3.5 px-4 font-semibold">Peserta & Kelas</th>
-              <th className="py-3.5 px-4 font-semibold">Kontak Ortu</th>
-              <th className="py-3.5 px-4 font-semibold">Tanggal Daftar</th>
-              <th className="py-3.5 px-4 font-semibold">Status Akun</th>
-              <th className="py-3.5 px-4 font-semibold">Langganan & Bayar</th>
-              <th className="py-3.5 px-4 font-semibold text-center">Aksi Cepat</th>
+              <th className="py-4 px-4 font-semibold rounded-tl-lg">Peserta & Kelas</th>
+              <th className="py-4 px-4 font-semibold">Kontak Ortu</th>
+              <th className="py-4 px-4 font-semibold">Tanggal Daftar</th>
+              <th className="py-4 px-4 font-semibold">Status Akun</th>
+              <th className="py-4 px-4 font-semibold">Langganan & Bayar</th>
+              <th className="py-4 px-4 font-semibold text-center rounded-tr-lg">Aksi Cepat</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
@@ -83,9 +84,9 @@ export default function PendaftarTable({
                   <td className="py-3 px-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                       item.status === "Dikonfirmasi" ? "bg-emerald-100 text-emerald-700" :
-                      item.status === "Batal" ? "bg-red-100 text-red-700" :
+                      item.status === "Batal" ? "bg-red-600 text-white" :
                       item.status === "Berhenti" ? "bg-slate-200 text-slate-700" :
-                      "bg-amber-100 text-amber-700"
+                      "bg-amber-300 text-amber-700"
                     }`}>
                       {item.status}
                     </span>
@@ -107,12 +108,12 @@ export default function PendaftarTable({
                     )}
                   </td>
 
-                  {/* Kolom 6: Aksi Cepat (Diringkas Menjadi Satu Tombol Kelola Saja) */}
+                  {/* Kolom 6: Aksi Cepat */}
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-center">
                       <button
                         onClick={() => onSelectPendaftar(item)}
-                        className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                        className="px-3.5 py-1.5 bg-slate-400 hover:bg-slate-500 hover:text-slate-100 hover:border-teal-200 text-slate-700 border border-slate-200 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
                       >
                         ⚙️ Kelola
                       </button>
