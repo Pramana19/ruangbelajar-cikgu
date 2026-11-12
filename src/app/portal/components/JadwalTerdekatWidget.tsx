@@ -3,9 +3,9 @@ export default function JadwalTerdekatWidget() {
     const jadwalTerdekat = [];
   
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <h2 className="font-bold text-slate-800">Jadwal Kelas Terdekat</h2>
+      <div className="bg-amber-50 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-700 to-cyan-600 p-5 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="font-bold text-teal-200">Jadwal Kelas Terdekat</h2>
         </div>
         
         <div className="p-8 flex flex-col items-center justify-center text-center">

@@ -12,7 +12,7 @@ export default function AdminLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="h-screen bg-slate-100 flex text-slate-800 overflow-hidden relative">
+    <div className="h-screen bg-indigo-100 flex text-slate-800 overflow-hidden relative">
       
       {/* Panggil Komponen Modular Sidebar */}
       <AdminSidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />

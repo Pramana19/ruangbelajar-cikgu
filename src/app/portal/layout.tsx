@@ -12,7 +12,7 @@ export default function PortalLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="h-screen bg-slate-100 flex text-slate-800 overflow-hidden relative">
+    <div className="h-screen bg-indigo-100 flex text-slate-800 overflow-hidden relative">
       
       {/* Backdrop blur saat sidebar menggelar */}
       {isSidebarOpen && (

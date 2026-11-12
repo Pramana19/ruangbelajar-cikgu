@@ -51,7 +51,7 @@ export default function StudentProfileCard({ points, studentData }: { points: nu
   if (!studentData) return null;
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+    <div className="bg-gradient-to-r from-indigo-700 to-cyan-600 p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
       
       {/* KIRI: Identitas Peserta */}
       <div className="flex items-center gap-4 flex-1">
@@ -60,12 +60,12 @@ export default function StudentProfileCard({ points, studentData }: { points: nu
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900">{studentData.nama}</h1>
+            <h1 className="text-xl font-bold text-teal-200">{studentData.nama}</h1>
             <span className="bg-teal-100 text-teal-800 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
               {studentData.kelas}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-white mt-0.5">
             Wali: {studentData.orangTua} • Privat Mat & Calistung
           </p>
         </div>
@@ -88,10 +88,10 @@ export default function StudentProfileCard({ points, studentData }: { points: nu
               <>⚠️ Belum Lunas (Lockout)</>
             )}
           </div>
-          <div className="text-sm font-black text-slate-800 tracking-tight">
+          <div className="text-xl font-medium text-white tracking-tight">
             {studentData.paketLangganan}
           </div>
-          <div className="text-[11px] font-semibold text-teal-600 mt-0.5">
+          <div className="text-[12px] font-semibold text-teal-100 mt-0.5">
             {sisaWaktu}
           </div>
         </div>

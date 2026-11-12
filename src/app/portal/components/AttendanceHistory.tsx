@@ -1,7 +1,7 @@
 export default function AttendanceHistory({ isClaimed }: { isClaimed: boolean }) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
-        <h3 className="font-bold text-slate-900 text-sm">Riwayat Kehadiran Siswa</h3>
+      <div className="bg-gradient-to-r from-indigo-700 to-cyan-600 rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <h3 className="font-bold text-teal-200 text-sm">Riwayat Kehadiran Siswa</h3>
         <div className="space-y-2">
           {isClaimed && (
             <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-100">
