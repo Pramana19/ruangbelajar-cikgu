@@ -1,108 +1,128 @@
 export interface PendingTicket {
-    id: number;
-    namaKelas: string;
-    mapel: string;
-    jadwal: string;
-    status: "Menunggu" | "Selesai";
-  }
-  
-  export default function TicketQueue({
-    tickets,
-    onSelectTicket,
-  }: {
-    tickets: PendingTicket[];
-    onSelectTicket: (ticket: PendingTicket) => void;
-  }) {
-    // Pisahkan tiket berdasarkan status
-    const pendingTickets = tickets.filter((t) => t.status === "Menunggu");
-    const completedTickets = tickets.filter((t) => t.status === "Selesai");
-  
-    return (
-      <div className="space-y-6">
-        
-        {/* SEKAT 1: ANTRIAN MENUNGGU */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-            <div>
-              <h2 className="font-bold text-slate-800">Antrian Upload Materi</h2>
-              <p className="text-[11px] text-slate-500 mt-0.5">Sesi kelas yang belum memiliki materi/modul.</p>
-            </div>
-            <span className="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full animate-pulse">
-              {pendingTickets.length} Antrian
-            </span>
-          </div>
-  
-          <div className="p-5">
-            {pendingTickets.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-3">🎉</div>
-                <p className="text-sm font-bold text-slate-800">Hore! Semua kelas sudah memiliki materi.</p>
-                <p className="text-xs text-slate-500 mt-1">Anda bisa bersantai sekarang, Cikgu.</p>
-              </div>
+  id: number;
+  namaKelas: string;
+  mapel: string;
+  jadwal: string;
+  status: "Menunggu" | "Selesai";
+}
+
+export default function TicketQueue({
+  tickets,
+  onSelectTicket,
+  onEditTicket,
+  onDeleteTicket,
+}: {
+  tickets: PendingTicket[];
+  onSelectTicket: (ticket: PendingTicket) => void;
+  onEditTicket: (ticket: PendingTicket) => void;
+  onDeleteTicket: (id: number) => void;
+}) {
+  const pendingCount = tickets.filter((t) => t.status === "Menunggu").length;
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm text-slate-600 whitespace-nowrap">
+          <thead className="bg-gradient-to-r from-indigo-700 to-cyan-600 text-white text-xs uppercase tracking-wider">
+            <tr>
+              <th className="py-4 px-4 font-semibold rounded-tl-lg">Jadwal Sesi</th>
+              <th className="py-4 px-4 font-semibold">Kelas & Mata Pelajaran</th>
+              <th className="py-4 px-4 font-semibold">
+                <div className="flex items-center gap-2">
+                  <span>Status Materi</span>
+                  {pendingCount > 0 && (
+                    <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {pendingCount} Antrian
+                    </span>
+                  )}
+                </div>
+              </th>
+              <th className="py-4 px-4 font-semibold text-center rounded-tr-lg">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {tickets.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="py-8 text-center text-xs text-slate-400">
+                  Tidak ada daftar materi yang sesuai filter. Klik &quot;+ Tambah Materi&quot; untuk membuat jadwal baru.
+                </td>
+              </tr>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {pendingTickets.map((ticket) => (
-                  <div 
-                    key={ticket.id} 
-                    className="border border-slate-200 rounded-xl p-4 hover:border-purple-300 hover:shadow-md transition-all cursor-pointer bg-white group"
-                    onClick={() => onSelectTicket(ticket)}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 uppercase tracking-wider">
-                        Menunggu Materi
-                      </span>
-                      <span className="text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-slate-800 text-sm">{ticket.namaKelas}</h3>
-                    <p className="text-xs font-medium text-slate-600 mt-1">{ticket.mapel}</p>
-                    <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 font-mono bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-100">
-                      <span>📅</span> {ticket.jadwal}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              tickets.map((ticket) => {
+                const isMenunggu = ticket.status === "Menunggu";
+
+                return (
+                  <tr key={ticket.id} className="hover:bg-slate-50 transition-colors">
+                    {/* Kolom 1: Jadwal Sesi */}
+                    <td className="py-3.5 px-4">
+                      <div className="text-xs font-mono font-semibold text-slate-700 flex items-center gap-1.5">
+                        <span>📅</span> {ticket.jadwal}
+                      </div>
+                    </td>
+
+                    {/* Kolom 2: Kelas & Mata Pelajaran */}
+                    <td className="py-3.5 px-4">
+                      <div className="font-bold text-slate-900">{ticket.namaKelas}</div>
+                      <div className="text-xs text-teal-600 font-medium mt-0.5">{ticket.mapel}</div>
+                    </td>
+
+                    {/* Kolom 3: Status Materi */}
+                    <td className="py-3.5 px-4">
+                      {isMenunggu ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          Menunggu Materi
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          ✓ Sudah Diunggah
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Kolom 4: Aksi (Upload, Edit, Hapus) */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onSelectTicket(ticket)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-xs ${
+                            isMenunggu
+                              ? "bg-teal-600 hover:bg-teal-700 text-white"
+                              : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                          }`}
+                        >
+                          {isMenunggu ? "📤 Upload" : "🔄 Ganti"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onEditTicket(ticket)}
+                          title="Edit Info Jadwal/Mapel"
+                          className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/60 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm(`Hapus antrian materi "${ticket.mapel}" (${ticket.namaKelas})?`)) {
+                              onDeleteTicket(ticket.id);
+                            }
+                          }}
+                          title="Hapus Materi"
+                          className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
-          </div>
-        </div>
-  
-        {/* SEKAT 2: RIWAYAT SELESAI */}
-        {completedTickets.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-emerald-50">
-              <div>
-                <h2 className="font-bold text-emerald-800">Riwayat Materi Terkirim</h2>
-                <p className="text-[11px] text-emerald-600 mt-0.5">Materi yang sudah berhasil diunggah minggu ini.</p>
-              </div>
-              <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full">
-                {completedTickets.length} Selesai
-              </span>
-            </div>
-  
-            <div className="p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {completedTickets.map((ticket) => (
-                  <div 
-                    key={ticket.id} 
-                    className="border border-emerald-100 rounded-xl p-4 bg-emerald-50/30"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wider gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                        Sudah Diunggah
-                      </span>
-                    </div>
-                    {/* Efek coretan dihapus di baris bawah ini */}
-                    <h3 className="font-bold text-slate-800 text-sm">{ticket.namaKelas}</h3>
-                    <p className="text-xs font-medium text-slate-500 mt-1">{ticket.mapel}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-  
+          </tbody>
+        </table>
       </div>
-    );
-  }
+    </div>
+  );
+}

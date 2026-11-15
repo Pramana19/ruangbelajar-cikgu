@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 export interface JadwalLes {
   id: number;
   namaKelas: string;
@@ -16,46 +14,30 @@ export default function JadwalTable({
   jadwalList,
   onDelete,
   onUpdate,
+  onEdit,
 }: {
   jadwalList: JadwalLes[];
   onDelete: (id: number) => void;
   onUpdate: (updatedItem: JadwalLes) => void;
+  onEdit: (item: JadwalLes) => void;
 }) {
-  // State untuk melacak baris mana yang sedang diedit berdasarkan ID
-  const [editingId, setEditingId] = useState<number | null>(null);
-  
-  // State menampung data sementara saat sedang diedit
-  const [editForm, setEditForm] = useState<JadwalLes | null>(null);
-
-  const handleStartEdit = (item: JadwalLes) => {
-    setEditingId(item.id);
-    setEditForm({ ...item });
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditForm(null);
-  };
-
-  const handleSaveEdit = (id: number) => {
-    if (editForm) {
-      onUpdate(editForm);
-    }
-    setEditingId(null);
-    setEditForm(null);
+  // Fungsi toggle cepat Status Aktif <-> Libur
+  const handleToggleStatus = (item: JadwalLes) => {
+    const nextStatus = item.status === "Aktif" ? "Libur" : "Aktif";
+    onUpdate({ ...item, status: nextStatus });
   };
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-600">
-          <thead className="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider border-b border-slate-200">
+        <table className="w-full text-left text-sm text-slate-600 whitespace-nowrap">
+          <thead className="bg-gradient-to-r from-indigo-700 to-cyan-600 text-white text-xs uppercase tracking-wider">
             <tr>
-              <th className="py-3.5 px-4 font-semibold">Hari & Jam</th>
-              <th className="py-3.5 px-4 font-semibold">Nama Kelas & Target (Grup)</th>
-              <th className="py-3.5 px-4 font-semibold">Mata Pelajaran</th>
-              <th className="py-3.5 px-4 font-semibold">Status Sesi</th>
-              <th className="py-3.5 px-4 font-semibold text-center">Aksi (Edit / Hapus)</th>
+              <th className="py-4 px-4 font-semibold rounded-tl-lg">Hari & Jam</th>
+              <th className="py-4 px-4 font-semibold">Nama Kelas & Target (Grup)</th>
+              <th className="py-4 px-4 font-semibold">Mata Pelajaran</th>
+              <th className="py-4 px-4 font-semibold">Status Sesi</th>
+              <th className="py-4 px-4 font-semibold text-center rounded-tr-lg">Aksi (Edit / Hapus)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
@@ -67,129 +49,80 @@ export default function JadwalTable({
               </tr>
             ) : (
               jadwalList.map((item) => {
-                const isEditing = editingId === item.id;
+                const isAktif = item.status === "Aktif";
 
                 return (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                     {/* HARI & JAM */}
-                    <td className="py-3.5 px-4 align-top">
-                      {isEditing && editForm ? (
-                        <div className="space-y-1.5">
-                          <input
-                            type="text"
-                            value={editForm.hari}
-                            onChange={(e) => setEditForm({ ...editForm, hari: e.target.value })}
-                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-900 bg-white"
-                            placeholder="Hari (Contoh: Senin)"
-                          />
-                          <input
-                            type="text"
-                            value={editForm.jam}
-                            onChange={(e) => setEditForm({ ...editForm, jam: e.target.value })}
-                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono text-slate-800 bg-white"
-                            placeholder="Jam (Contoh: 19:00 - 21:00 WIB)"
-                          />
-                        </div>
-                      ) : (
-                        <>
-                          <div className="font-bold text-slate-900">{item.hari}</div>
-                          <div className="text-xs text-slate-500 font-mono">{item.jam}</div>
-                        </>
-                      )}
+                    <td className="py-3.5 px-4">
+                      <div className="font-bold text-slate-900">{item.hari}</div>
+                      <div className="text-xs text-slate-500 font-mono">{item.jam}</div>
                     </td>
 
                     {/* NAMA KELAS & TARGET PESERTA */}
-                    <td className="py-3.5 px-4 align-top">
-                      {isEditing && editForm ? (
-                        <div className="space-y-1.5">
-                          <input
-                            type="text"
-                            value={editForm.namaKelas}
-                            onChange={(e) => setEditForm({ ...editForm, namaKelas: e.target.value })}
-                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-semibold text-slate-900 bg-white"
-                            placeholder="Nama Kelas"
-                          />
-                          <input
-                            type="text"
-                            value={editForm.targetPeserta}
-                            onChange={(e) => setEditForm({ ...editForm, targetPeserta: e.target.value })}
-                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs text-teal-700 bg-white"
-                            placeholder="Target Peserta"
-                          />
-                        </div>
-                      ) : (
-                        <>
-                          <div className="font-semibold text-slate-800">{item.namaKelas}</div>
-                          <div className="text-xs text-teal-600 font-medium">{item.targetPeserta}</div>
-                        </>
-                      )}
+                    <td className="py-3.5 px-4">
+                      <div className="font-semibold text-slate-800">{item.namaKelas}</div>
+                      <div className="text-xs text-teal-600 font-medium">{item.targetPeserta}</div>
                     </td>
 
                     {/* MATA PELAJARAN */}
-                    <td className="py-3.5 px-4 align-top">
-                      {isEditing && editForm ? (
-                        <input
-                          type="text"
-                          value={editForm.mapel}
-                          onChange={(e) => setEditForm({ ...editForm, mapel: e.target.value })}
-                          className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-medium text-slate-800 bg-white"
-                          placeholder="Mata Pelajaran"
-                        />
+                    <td className="py-3.5 px-4">
+                      <div className="text-xs font-medium text-slate-700">{item.mapel}</div>
+                    </td>
+
+                    {/* STATUS SESI (MODEL FLOWBITE SWITCH TOGGLE - TEKS TERKUNCI ANTI GESER) */}
+                    <td className="py-3.5 px-4">
+                      {item.status === "Selesai" ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                          Selesai
+                        </span>
                       ) : (
-                        <div className="text-xs font-medium text-slate-700">{item.mapel}</div>
+                        <label
+                          className="inline-flex items-center cursor-pointer select-none"
+                          title="Geser untuk mengubah status Aktif / Libur"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isAktif}
+                            onChange={() => handleToggleStatus(item)}
+                            className="sr-only peer"
+                          />
+                          <div className="relative w-9 h-5 shrink-0 bg-amber-400 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-teal-300 rounded-full peer peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all after:shadow-xs peer-checked:after:translate-x-full"></div>
+                          <span
+                            className={`ms-2.5 w-11 inline-block text-xs font-bold transition-colors ${
+                              isAktif ? "text-emerald-700" : "text-amber-700"
+                            }`}
+                          >
+                            {item.status}
+                          </span>
+                        </label>
                       )}
                     </td>
 
-                    {/* STATUS SESI */}
-                    <td className="py-3.5 px-4 align-top">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
-                          item.status === "Aktif"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : item.status === "Selesai"
-                            ? "bg-slate-100 text-slate-700"
-                            : "bg-amber-100 text-amber-800"
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-
-                    {/* AKSI (EDIT DENGAN IKON PENSIL / SIMPAN / BATAL / HAPUS) */}
-                    <td className="py-3.5 px-4 text-center align-top">
-                      {isEditing ? (
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => handleSaveEdit(item.id)}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-colors"
-                          >
-                            Simpan ✓
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="px-2.5 py-1 bg-slate-300 hover:bg-slate-400 text-slate-800 rounded text-[11px] font-bold transition-colors"
-                          >
-                            Batal ✕
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => handleStartEdit(item)}
-                            className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded text-xs font-semibold transition-colors flex items-center gap-1"
-                            title="Edit Jadwal"
-                          >
-                            ✏️ Edit
-                          </button>
-                          <button
-                            onClick={() => onDelete(item.id)}
-                            className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-semibold transition-colors"
-                            title="Hapus Jadwal"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      )}
+                    {/* AKSI (EDIT VIA MODAL / HAPUS) */}
+                    <td className="py-3.5 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(item)}
+                          className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/60 rounded text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Edit Jadwal"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm(`Hapus jadwal "${item.mapel}" (${item.hari})?`)) {
+                              onDelete(item.id);
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-semibold transition-colors cursor-pointer"
+                          title="Hapus Jadwal"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

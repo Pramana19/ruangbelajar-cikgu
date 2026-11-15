@@ -45,20 +45,22 @@ export default function FormUploadMateri({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-teal-200 shadow-md overflow-hidden relative animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className="absolute top-0 left-0 w-1 h-full bg-teal-500"></div>
-      
-      <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-teal-50/50 pl-6">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="bg-gradient-to-r from-indigo-700 to-cyan-600 p-5 flex items-center justify-between">
         <div>
-          <h2 className="font-bold text-slate-800">Upload Materi Kelas</h2>
-          <p className="text-xs text-slate-500 mt-0.5">{ticket.namaKelas} • {ticket.mapel}</p>
+          <h2 className="font-bold text-teal-200">Upload Materi Kelas</h2>
+          <p className="text-xs text-white/80 mt-0.5">{ticket.namaKelas} • {ticket.mapel}</p>
         </div>
-        <button onClick={onCancel} className="text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-xs font-bold text-white bg-white/20 hover:bg-white/30 border border-white/30 px-3 py-1.5 rounded-lg transition-colors cursor-pointer backdrop-blur-xs"
+        >
           Batal & Kembali
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5 pl-6">
+      <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
             <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Judul Materi</label>
@@ -98,7 +100,7 @@ export default function FormUploadMateri({
         </div>
 
         <div className="pt-2 border-t border-slate-100 flex justify-end">
-          <button type="submit" disabled={tipeMateri === "PDF" && (!file || !!errorFile)} className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-all shadow-sm">
+          <button type="submit" disabled={tipeMateri === "PDF" && (!file || !!errorFile)} className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-all shadow-sm cursor-pointer">
             Simpan & Distribusikan Materi
           </button>
         </div>
