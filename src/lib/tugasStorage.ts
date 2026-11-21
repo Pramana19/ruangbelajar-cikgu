@@ -1,4 +1,5 @@
 import { LampiranFile } from "./pesanStorage";
+import { supabase } from "./supabase";
 
 export interface InstruksiTugas {
   id: string;
@@ -14,6 +15,7 @@ export interface InstruksiTugas {
 export interface PengumpulanTugas {
   id: string;
   tugasId?: string;
+  siswaId?: string;
   judulTugas: string;
   siswa: string;
   kelas: string;
@@ -28,83 +30,131 @@ export interface PengumpulanTugas {
   hiddenForSiswa?: boolean;
 }
 
-const KEY_INSTRUKSI = "ruangbelajar_instruksi_tugas";
-const KEY_SUBMISSION = "ruangbelajar_pengumpulan_tugas";
+const mapInstruksi = (row: Record<string, unknown>): InstruksiTugas => ({
+  id: String(row.id),
+  mapel: String(row.mapel || ""),
+  judul: String(row.judul || ""),
+  deskripsi: String(row.deskripsi || ""),
+  tenggat: String(row.tenggat || "Fleksibel"),
+  linkReferensi: (row.link_referensi as string) || "",
+  lampiranList: (row.lampiran_list as LampiranFile[]) || [],
+  dibuatPada: String(row.dibuat_pada || ""),
+});
 
-const INITIAL_INSTRUKSI: InstruksiTugas[] = [
-  {
-    id: "TGS-01",
-    mapel: "Matematika Dasar & Calistung",
-    judul: "Latihan Perkalian & Soal Cerita",
-    deskripsi: "1. Kerjakan soal perkalian halaman 12 buku modul.\n2. Tuliskan cara penyelesaiannya di kertas lalu foto atau ketik jawabannya.",
-    tenggat: "2026-11-20",
-    dibuatPada: "2026-11-15",
-  },
-  {
-    id: "TGS-02",
-    mapel: "Ilmu Pengetahuan Alam (IPA)",
-    judul: "Pengamatan Bagian Tumbuhan",
-    deskripsi: "1. Sebutkan 4 bagian utama tumbuhan dan fungsinya!\n2. Jika file foto/video di atas 2MB, tempelkan link Google Drive pada kolom tautan.",
-    tenggat: "2026-11-22",
-    dibuatPada: "2026-11-15",
-  },
-];
+const mapSubmission = (row: Record<string, unknown>): PengumpulanTugas => ({
+  id: String(row.id),
+  tugasId: (row.tugas_id as string) || undefined,
+  siswaId: (row.siswa_id as string) || undefined,
+  judulTugas: String(row.judul_tugas || ""),
+  siswa: String(row.siswa || ""),
+  kelas: String(row.kelas || ""),
+  mapel: String(row.mapel || ""),
+  waktuKumpul: String(row.waktu_kumpul || ""),
+  jawabanTeks: (row.jawaban_teks as string) || "",
+  linkJawaban: (row.link_jawaban as string) || "",
+  fileLampiran: (row.file_lampiran as LampiranFile | null) || null,
+  status: (row.status as PengumpulanTugas["status"]) || "Menunggu Koreksi",
+  nilai: (row.nilai as string) || "",
+  catatanCikgu: (row.catatan_cikgu as string) || "",
+  hiddenForSiswa: Boolean(row.hidden_for_siswa),
+});
 
-const INITIAL_SUBMISSIONS: PengumpulanTugas[] = [
-  {
-    id: "SUB-101",
-    tugasId: "TGS-01",
-    judulTugas: "Latihan Perkalian & Soal Cerita",
-    siswa: "Siti Rahma",
-    kelas: "Kelas 1 SD",
-    mapel: "Matematika Dasar & Calistung",
-    waktuKumpul: "2026-11-15 15:30",
-    jawabanTeks: "1. 4 x 5 = 20\n2. Total apel di keranjang adalah 24 buah.",
-    fileLampiran: { nama: "Tugas_MTK_Siti.pdf", tipe: "pdf", url: "#" },
-    status: "Sudah Dinilai",
-    nilai: "95",
-    catatanCikgu: "Langkah pengerjaan sudah rapi dan benar semua!",
-  },
-];
-
-export function getInstruksiTugas(): InstruksiTugas[] {
-  if (typeof window === "undefined") return INITIAL_INSTRUKSI;
-  const saved = localStorage.getItem(KEY_INSTRUKSI);
-  if (!saved) {
-    localStorage.setItem(KEY_INSTRUKSI, JSON.stringify(INITIAL_INSTRUKSI));
-    return INITIAL_INSTRUKSI;
-  }
-  try {
-    return JSON.parse(saved);
-  } catch {
-    return INITIAL_INSTRUKSI;
-  }
+export async function fetchInstruksiTugas(): Promise<InstruksiTugas[]> {
+  const { data, error } = await supabase
+    .from("instruksi_tugas")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+  return data.map(mapInstruksi);
 }
 
-export function saveInstruksiTugas(data: InstruksiTugas[]) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(KEY_INSTRUKSI, JSON.stringify(data));
-    window.dispatchEvent(new Event("storage"));
+export async function upsertInstruksiTugas(
+  payload: Omit<InstruksiTugas, "id" | "dibuatPada">,
+  editId?: string
+): Promise<InstruksiTugas | null> {
+  const dbRow = {
+    mapel: payload.mapel,
+    judul: payload.judul,
+    deskripsi: payload.deskripsi,
+    tenggat: payload.tenggat || "Fleksibel",
+    link_referensi: payload.linkReferensi || null,
+    lampiran_list: payload.lampiranList || [],
+  };
+
+  if (editId) {
+    const { data, error } = await supabase
+      .from("instruksi_tugas")
+      .update(dbRow)
+      .eq("id", editId)
+      .select()
+      .single();
+    if (error || !data) return null;
+    return mapInstruksi(data);
   }
+
+  const { data, error } = await supabase
+    .from("instruksi_tugas")
+    .insert({ ...dbRow, dibuat_pada: new Date().toISOString().split("T")[0] })
+    .select()
+    .single();
+  if (error || !data) return null;
+  return mapInstruksi(data);
 }
 
-export function getPengumpulanTugas(): PengumpulanTugas[] {
-  if (typeof window === "undefined") return INITIAL_SUBMISSIONS;
-  const saved = localStorage.getItem(KEY_SUBMISSION);
-  if (!saved) {
-    localStorage.setItem(KEY_SUBMISSION, JSON.stringify(INITIAL_SUBMISSIONS));
-    return INITIAL_SUBMISSIONS;
-  }
-  try {
-    return JSON.parse(saved);
-  } catch {
-    return INITIAL_SUBMISSIONS;
-  }
+export async function deleteInstruksiTugas(id: string): Promise<boolean> {
+  const { error } = await supabase.from("instruksi_tugas").delete().eq("id", id);
+  return !error;
 }
 
-export function savePengumpulanTugas(data: PengumpulanTugas[]) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(KEY_SUBMISSION, JSON.stringify(data));
-    window.dispatchEvent(new Event("storage"));
-  }
+export async function fetchPengumpulanTugas(siswaId?: string): Promise<PengumpulanTugas[]> {
+  let query = supabase
+    .from("pengumpulan_tugas")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (siswaId) query = query.eq("siswa_id", siswaId);
+  const { data, error } = await query;
+  if (error || !data) return [];
+  return data.map(mapSubmission);
+}
+
+export async function createPengumpulanTugas(
+  payload: Omit<PengumpulanTugas, "id" | "status">
+): Promise<PengumpulanTugas | null> {
+  const { data, error } = await supabase
+    .from("pengumpulan_tugas")
+    .insert({
+      tugas_id: payload.tugasId || null,
+      siswa_id: payload.siswaId || null,
+      judul_tugas: payload.judulTugas,
+      siswa: payload.siswa,
+      kelas: payload.kelas,
+      mapel: payload.mapel,
+      waktu_kumpul: payload.waktuKumpul,
+      jawaban_teks: payload.jawabanTeks || null,
+      link_jawaban: payload.linkJawaban || null,
+      file_lampiran: payload.fileLampiran || null,
+      status: "Menunggu Koreksi",
+    })
+    .select()
+    .single();
+  if (error || !data) return null;
+  return mapSubmission(data);
+}
+
+export async function updatePengumpulanTugas(
+  id: string,
+  updates: Record<string, unknown>
+): Promise<boolean> {
+  const { error } = await supabase.from("pengumpulan_tugas").update(updates).eq("id", id);
+  return !error;
+}
+
+export async function deletePengumpulanTugas(id: string): Promise<boolean> {
+  const { error } = await supabase.from("pengumpulan_tugas").delete().eq("id", id);
+  return !error;
+}
+
+export async function bersihkanSubmissionSudahDinilai(): Promise<boolean> {
+  const { error } = await supabase.from("pengumpulan_tugas").delete().eq("status", "Sudah Dinilai");
+  return !error;
 }

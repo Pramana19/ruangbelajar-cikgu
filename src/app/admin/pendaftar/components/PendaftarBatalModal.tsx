@@ -10,13 +10,12 @@ export default function PendaftarBatalModal({
 }: {
   pendaftar: Pendaftar;
   onClose: () => void;
-  onAktifkan: (id: number) => void;
-  onDelete: (id: number) => void;
+  onAktifkan: (id: string) => void;
+  onDelete: (id: string) => void;
 }) {
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in">
       <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
-        
         <div className="bg-slate-50 px-6 py-4 flex items-center justify-between border-b border-slate-100">
           <div>
             <h3 className="font-bold text-slate-900 text-base">Kelola Akun Dibatalkan</h3>
@@ -32,7 +31,7 @@ export default function PendaftarBatalModal({
             <span className="text-2xl">⚠️</span>
             <h4 className="font-bold text-rose-800 text-sm">Akun Ini Berstatus Dibatalkan / Ditolak</h4>
             <p className="text-xs text-rose-600 leading-relaxed">
-              Peserta atas nama <strong className="text-rose-800">{pendaftar.namaAnak}</strong> saat ini tidak aktif. Anda dapat mengaktifkan kembali antirannya atau menghapus permanen data ini dari sistem.
+              Peserta atas nama <strong className="text-rose-800">{pendaftar.namaAnak}</strong> saat ini tidak aktif. Anda dapat mengaktifkan kembali antriannya atau menghapus permanen data ini dari sistem.
             </p>
           </div>
 
@@ -61,7 +60,6 @@ export default function PendaftarBatalModal({
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

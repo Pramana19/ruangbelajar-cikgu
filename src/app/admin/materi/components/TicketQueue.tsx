@@ -1,9 +1,14 @@
 export interface PendingTicket {
-  id: number;
+  id: string;
   namaKelas: string;
   mapel: string;
   jadwal: string;
   status: "Menunggu" | "Selesai";
+  judul?: string;
+  tipe?: "Video" | "PDF";
+  url?: string;
+  ukuran?: string;
+  tanggal?: string;
 }
 
 export default function TicketQueue({
@@ -15,7 +20,7 @@ export default function TicketQueue({
   tickets: PendingTicket[];
   onSelectTicket: (ticket: PendingTicket) => void;
   onEditTicket: (ticket: PendingTicket) => void;
-  onDeleteTicket: (id: number) => void;
+  onDeleteTicket: (id: string) => void;
 }) {
   const pendingCount = tickets.filter((t) => t.status === "Menunggu").length;
 
@@ -50,23 +55,26 @@ export default function TicketQueue({
             ) : (
               tickets.map((ticket) => {
                 const isMenunggu = ticket.status === "Menunggu";
+                const ikonMateri = ticket.tipe === "PDF" ? "📄" : ticket.tipe === "Video" ? "🎥" : "📝";
 
                 return (
                   <tr key={ticket.id} className="hover:bg-slate-50 transition-colors">
-                    {/* Kolom 1: Jadwal Sesi */}
                     <td className="py-3.5 px-4">
                       <div className="text-xs font-mono font-semibold text-slate-700 flex items-center gap-1.5">
                         <span>📅</span> {ticket.jadwal}
                       </div>
                     </td>
 
-                    {/* Kolom 2: Kelas & Mata Pelajaran */}
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-slate-900">{ticket.namaKelas}</div>
                       <div className="text-xs text-teal-600 font-medium mt-0.5">{ticket.mapel}</div>
+                      {ticket.judul && (
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          {ikonMateri} {ticket.judul}
+                        </div>
+                      )}
                     </td>
 
-                    {/* Kolom 3: Status Materi */}
                     <td className="py-3.5 px-4">
                       {isMenunggu ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
@@ -80,7 +88,6 @@ export default function TicketQueue({
                       )}
                     </td>
 
-                    {/* Kolom 4: Aksi (Upload, Edit, Hapus) */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center justify-center gap-1.5">
                         <button

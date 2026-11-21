@@ -8,10 +8,12 @@ export default function RiwayatTugasList({
   submissions,
   onUpdateJawaban,
   onHapusRiwayatSiswa,
+  isLocked = false,
 }: {
   submissions: PengumpulanTugas[];
   onUpdateJawaban: (id: string, jawabanTeks: string, linkJawaban: string, fileLampiran?: LampiranFile | null) => void;
   onHapusRiwayatSiswa: (id: string) => void;
+  isLocked?: boolean;
 }) {
   const [editItem, setEditItem] = useState<PengumpulanTugas | null>(null);
   const [teksEdit, setTeksEdit] = useState("");
@@ -19,6 +21,7 @@ export default function RiwayatTugasList({
   const [fileEdit, setFileEdit] = useState<LampiranFile | null>(null);
 
   const bukaFormEdit = (item: PengumpulanTugas) => {
+    if (isLocked) return;
     setEditItem(item);
     setTeksEdit(item.jawabanTeks || "");
     setLinkEdit(item.linkJawaban || "");
@@ -62,7 +65,7 @@ export default function RiwayatTugasList({
                     }`}>
                       {item.status} {item.nilai ? `• Nilai: ${item.nilai}` : ""}
                     </span>
-                    {!terkunciFinal ? (
+                    {!isLocked && (!terkunciFinal ? (
                       <button
                         type="button"
                         onClick={() => bukaFormEdit(item)}
@@ -81,7 +84,7 @@ export default function RiwayatTugasList({
                       >
                         🗑️
                       </button>
-                    )}
+                    ))}
                   </div>
                 </div>
 

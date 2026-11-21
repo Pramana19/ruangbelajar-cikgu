@@ -8,7 +8,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  // Deteksi apakah sedang berada di dalam portal siswa
+  // Deteksi apakah sedang berada di dalam portal peserta
   const isPortal = pathname.startsWith("/portal");
 
   return (
@@ -32,7 +32,7 @@ export default function Navbar() {
 
       <div className="flex items-center gap-3">
         {isPortal ? (
-          // TOMBOL KELUAR UNTUK PORTAL SISWA
+          // TOMBOL KELUAR UNTUK PORTAL PESERTA
           <Link
             href="/"
             className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-all flex items-center gap-2"
@@ -58,15 +58,11 @@ export default function Navbar() {
                   <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pilih Portal Masuk</div>
                   <Link href="/login?role=ortu" onClick={() => setIsOpen(false)} className="flex items-start gap-2.5 px-3 py-2 hover:bg-slate-50 transition-colors">
                     <span className="w-2 h-2 rounded-full bg-teal-500 mt-1.5 flex-shrink-0"></span>
-                    <div><div className="text-xs font-semibold text-slate-800">Siswa / Orang Tua</div><p className="text-[10px] text-slate-500">Akses jadwal & klaim token les</p></div>
+                    <div><div className="text-xs font-semibold text-slate-800">Peserta / Orang Tua</div><p className="text-[10px] text-slate-500">Akses jadwal & klaim token les</p></div>
                   </Link>
                   <Link href="/login?role=pengajar" onClick={() => setIsOpen(false)} className="flex items-start gap-2.5 px-3 py-2 hover:bg-slate-50 transition-colors">
                     <span className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 flex-shrink-0"></span>
                     <div><div className="text-xs font-semibold text-slate-800">Pengajar (Cikgu)</div><p className="text-[10px] text-slate-500">Kelola token & presensi harian</p></div>
-                  </Link>
-                  <Link href="/login?role=admin" onClick={() => setIsOpen(false)} className="flex items-start gap-2.5 px-3 py-2 hover:bg-slate-50 transition-colors border-t border-slate-100 mt-1 pt-2">
-                    <span className="w-2 h-2 rounded-full bg-indigo-600 mt-1.5 flex-shrink-0"></span>
-                    <div><div className="text-xs font-semibold text-slate-800">Admin Sistem</div><p className="text-[10px] text-slate-500">Akses penuh panel sistem /dev</p></div>
                   </Link>
                 </div>
               )}

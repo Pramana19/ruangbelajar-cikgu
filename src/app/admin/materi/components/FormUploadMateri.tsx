@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { supabase } from "@/lib/supabase";
 import { PendingTicket } from "./TicketQueue";
+
+function toYoutubeEmbedUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  const match = trimmed.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  return match ? `https://www.youtube.com/embed/${match[1]}` : trimmed;
+}
 
 export default function FormUploadMateri({
   ticket,
@@ -10,13 +19,22 @@ export default function FormUploadMateri({
 }: {
   ticket: PendingTicket;
   onCancel: () => void;
-  onSubmitSuccess: () => void;
+  onSubmitSuccess: (materiData: {
+    judul: string;
+    tipe: "Video" | "PDF";
+    url: string;
+    ukuran?: string;
+    tanggal: string;
+  }) => Promise<void> | void;
 }) {
-  const [tipeMateri, setTipeMateri] = useState<"Video" | "PDF">("Video");
-  const [judul, setJudul] = useState("");
-  const [urlVideo, setUrlVideo] = useState("");
+  const [tipeMateri, setTipeMateri] = useState<"Video" | "PDF">(ticket.tipe || "Video");
+  const [judul, setJudul] = useState(ticket.judul || "");
+  const [urlVideo, setUrlVideo] = useState(
+    ticket.tipe === "Video" && ticket.url ? ticket.url.replace("embed/", "watch?v=") : ""
+  );
   const [file, setFile] = useState<File | null>(null);
   const [errorFile, setErrorFile] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,15 +51,54 @@ export default function FormUploadMateri({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!judul.trim() || isUploading) return;
     if (tipeMateri === "PDF" && (!file || errorFile)) return;
-    if (tipeMateri === "Video" && !urlVideo) return;
-    
-    // Simulasi simpan data
-    setTimeout(() => {
-      onSubmitSuccess();
-    }, 500);
+    if (tipeMateri === "Video" && !urlVideo.trim()) return;
+
+    setIsUploading(true);
+    const tanggal = new Date().toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+    try {
+      if (tipeMateri === "Video") {
+        await onSubmitSuccess({
+          judul: judul.trim(),
+          tipe: "Video",
+          url: toYoutubeEmbedUrl(urlVideo),
+          tanggal,
+        });
+      } else if (file) {
+        const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filePath = `${Date.now()}_${cleanName}`;
+        const { error: uploadError } = await supabase.storage
+          .from("materi-files")
+          .upload(filePath, file, { contentType: "application/pdf" });
+
+        if (uploadError) {
+          alert(`Gagal mengunggah PDF: ${uploadError.message}`);
+          setIsUploading(false);
+          return;
+        }
+
+        const { data: pubData } = supabase.storage.from("materi-files").getPublicUrl(filePath);
+        const sizeMB = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+        await onSubmitSuccess({
+          judul: judul.trim(),
+          tipe: "PDF",
+          url: pubData.publicUrl,
+          ukuran: sizeMB,
+          tanggal,
+        });
+      }
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -100,8 +157,8 @@ export default function FormUploadMateri({
         </div>
 
         <div className="pt-2 border-t border-slate-100 flex justify-end">
-          <button type="submit" disabled={tipeMateri === "PDF" && (!file || !!errorFile)} className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-all shadow-sm cursor-pointer">
-            Simpan & Distribusikan Materi
+          <button type="submit" disabled={isUploading || (tipeMateri === "PDF" && (!file || !!errorFile))} className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-all shadow-sm cursor-pointer">
+            {isUploading ? "Mengunggah..." : "Simpan & Distribusikan Materi"}
           </button>
         </div>
       </form>

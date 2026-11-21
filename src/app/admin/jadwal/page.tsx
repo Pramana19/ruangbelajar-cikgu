@@ -1,10 +1,22 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "../../../lib/supabase";
 import JadwalFilterBar from "./components/JadwalFilterBar";
 import JadwalTable, { JadwalLes } from "./components/JadwalTable";
 import TambahJadwalModal from "./components/TambahJadwalModal";
 import AdminTugasTab from "./components/AdminTugasTab";
-import { getInstruksiTugas, getPengumpulanTugas, InstruksiTugas, PengumpulanTugas, saveInstruksiTugas, savePengumpulanTugas } from "@/lib/tugasStorage";
+import {
+  InstruksiTugas,
+  PengumpulanTugas,
+  fetchInstruksiTugas,
+  upsertInstruksiTugas,
+  deleteInstruksiTugas,
+  fetchPengumpulanTugas,
+  updatePengumpulanTugas,
+  deletePengumpulanTugas,
+  bersihkanSubmissionSudahDinilai,
+} from "@/lib/tugasStorage";
 
 export default function JadwalAdminPage() {
   const [activeTab, setActiveTab] = useState<"jadwal" | "tugas">("jadwal");
@@ -12,45 +24,87 @@ export default function JadwalAdminPage() {
   const [dayFilter, setDayFilter] = useState("Semua");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingJadwal, setEditingJadwal] = useState<JadwalLes | null>(null);
-
-  const [jadwalList, setJadwalList] = useState<JadwalLes[]>([
-    { id: 1, namaKelas: "Kelas SD Gabungan", targetPeserta: "Siswa Kelas 1-6 SD", hari: "Senin", jam: "19:00 - 21:00 WIB", mapel: "Matematika Dasar & Calistung", status: "Aktif" },
-    { id: 2, namaKelas: "Kelas SD Gabungan", targetPeserta: "Siswa Kelas 1-6 SD", hari: "Rabu", jam: "19:00 - 21:00 WIB", mapel: "Bahasa Inggris Dasar", status: "Aktif" },
-    { id: 3, namaKelas: "Kelas SD Gabungan", targetPeserta: "Siswa Kelas 1-6 SD", hari: "Kamis", jam: "19:00 - 21:00 WIB", mapel: "Ilmu Pengetahuan Alam (IPA)", status: "Aktif" },
-  ]);
+  const [jadwalList, setJadwalList] = useState<JadwalLes[]>([]);
+  const [isLoadingJadwal, setIsLoadingJadwal] = useState(true);
 
   const [instruksiList, setInstruksiList] = useState<InstruksiTugas[]>([]);
   const [submissions, setSubmissions] = useState<PengumpulanTugas[]>([]);
 
-  useEffect(() => {
-    const sync = () => {
-      setInstruksiList(getInstruksiTugas());
-      setSubmissions(getPengumpulanTugas());
-    };
-    sync();
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
+  const fetchAllData = useCallback(async () => {
+    setIsLoadingJadwal(true);
+    const [{ data: jadwalData }, instruksiData, submissionData] = await Promise.all([
+      supabase.from("jadwal_kelas").select("*").order("created_at", { ascending: true }),
+      fetchInstruksiTugas(),
+      fetchPengumpulanTugas(),
+    ]);
+
+    if (jadwalData) {
+      setJadwalList(
+        jadwalData.map((row) => ({
+          id: row.id,
+          namaKelas: row.nama_kelas,
+          targetPeserta: row.target_peserta,
+          hari: row.hari,
+          jam: row.jam,
+          mapel: row.mapel,
+          status: row.status as JadwalLes["status"],
+        }))
+      );
+    }
+    setInstruksiList(instruksiData);
+    setSubmissions(submissionData);
+    setIsLoadingJadwal(false);
   }, []);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   const belumDikoreksi = submissions.filter((s) => s.status === "Menunggu Koreksi").length;
 
-  const handleSaveJadwal = (jadwalData: Omit<JadwalLes, "id">, id?: number) => {
-    if (id) setJadwalList((prev) => prev.map((item) => (item.id === id ? { ...jadwalData, id } : item)));
-    else setJadwalList((prev) => [{ ...jadwalData, id: Date.now() }, ...prev]);
+  const handleSaveJadwal = async (jadwalData: Omit<JadwalLes, "id">, id?: string) => {
+    const payload = {
+      nama_kelas: jadwalData.namaKelas,
+      target_peserta: jadwalData.targetPeserta,
+      hari: jadwalData.hari,
+      jam: jadwalData.jam,
+      mapel: jadwalData.mapel,
+      status: jadwalData.status,
+    };
+
+    if (id) {
+      const { error } = await supabase.from("jadwal_kelas").update(payload).eq("id", id);
+      if (error) return alert(`Gagal memperbarui jadwal: ${error.message}`);
+      setJadwalList((prev) => prev.map((item) => (item.id === id ? { ...jadwalData, id } : item)));
+    } else {
+      const { data, error } = await supabase.from("jadwal_kelas").insert(payload).select().single();
+      if (error || !data) return alert(`Gagal menambah jadwal: ${error?.message}`);
+      setJadwalList((prev) => [...prev, { ...jadwalData, id: data.id }]);
+    }
   };
 
-  const handleSimpanInstruksi = (data: Omit<InstruksiTugas, "id" | "dibuatPada">, editId?: string) => {
-    const next = editId
-      ? instruksiList.map((t) => (t.id === editId ? { ...t, ...data } : t))
-      : [{ ...data, id: `TGS-${Math.floor(10 + Math.random() * 89)}`, dibuatPada: new Date().toISOString().split("T")[0] }, ...instruksiList];
-    setInstruksiList(next);
-    saveInstruksiTugas(next);
+  const handleToggleStatusJadwal = async (updated: JadwalLes) => {
+    const { error } = await supabase.from("jadwal_kelas").update({ status: updated.status }).eq("id", updated.id);
+    if (error) return alert(`Gagal mengubah status sesi: ${error.message}`);
+    setJadwalList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
   };
 
-  const handleSimpanKoreksi = (id: string, status: "Sudah Dinilai" | "Perlu Revisi", nilai: string, catatanCikgu: string) => {
-    const next = submissions.map((s) => (s.id === id ? { ...s, status, nilai, catatanCikgu } : s));
-    setSubmissions(next);
-    savePengumpulanTugas(next);
+  const handleDeleteJadwal = async (id: string) => {
+    const { error } = await supabase.from("jadwal_kelas").delete().eq("id", id);
+    if (error) return alert(`Gagal menghapus jadwal: ${error.message}`);
+    setJadwalList((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleSimpanInstruksi = async (data: Omit<InstruksiTugas, "id" | "dibuatPada">, editId?: string) => {
+    const saved = await upsertInstruksiTugas(data, editId);
+    if (!saved) return alert("Gagal menyimpan instruksi tugas ke database.");
+    setInstruksiList((prev) => (editId ? prev.map((t) => (t.id === editId ? saved : t)) : [saved, ...prev]));
+  };
+
+  const handleSimpanKoreksi = async (id: string, status: "Sudah Dinilai" | "Perlu Revisi", nilai: string, catatanCikgu: string) => {
+    const ok = await updatePengumpulanTugas(id, { status, nilai: nilai || null, catatan_cikgu: catatanCikgu || null });
+    if (!ok) return alert("Gagal menyimpan penilaian tugas.");
+    setSubmissions((prev) => prev.map((s) => (s.id === id ? { ...s, status, nilai, catatanCikgu } : s)));
   };
 
   const filteredJadwal = jadwalList.filter(
@@ -77,7 +131,11 @@ export default function JadwalAdminPage() {
       {activeTab === "jadwal" ? (
         <>
           <JadwalFilterBar search={search} setSearch={setSearch} dayFilter={dayFilter} setDayFilter={setDayFilter} onOpenModal={() => { setEditingJadwal(null); setIsModalOpen(true); }} />
-          <JadwalTable jadwalList={filteredJadwal} onDelete={(id) => setJadwalList((p) => p.filter((i) => i.id !== id))} onUpdate={(u) => setJadwalList((p) => p.map((i) => (i.id === u.id ? u : i)))} onEdit={(item) => { setEditingJadwal(item); setIsModalOpen(true); }} />
+          {isLoadingJadwal ? (
+            <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-xs text-slate-500">Memuat jadwal kelas dari database...</div>
+          ) : (
+            <JadwalTable jadwalList={filteredJadwal} onDelete={handleDeleteJadwal} onUpdate={handleToggleStatusJadwal} onEdit={(item) => { setEditingJadwal(item); setIsModalOpen(true); }} />
+          )}
           <TambahJadwalModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingJadwal(null); }} onSaveJadwal={handleSaveJadwal} initialData={editingJadwal} />
         </>
       ) : (
@@ -85,10 +143,16 @@ export default function JadwalAdminPage() {
           instruksiList={instruksiList}
           submissions={submissions}
           onSimpanInstruksi={handleSimpanInstruksi}
-          onHapusInstruksi={(id) => { const n = instruksiList.filter((i) => i.id !== id); setInstruksiList(n); saveInstruksiTugas(n); }}
+          onHapusInstruksi={async (id) => {
+            if (await deleteInstruksiTugas(id)) setInstruksiList((p) => p.filter((i) => i.id !== id));
+          }}
           onSimpanKoreksi={handleSimpanKoreksi}
-          onHapusSubmission={(id) => { const n = submissions.filter((s) => s.id !== id); setSubmissions(n); savePengumpulanTugas(n); }}
-          onBersihkanSudahDinilai={() => { const n = submissions.filter((s) => s.status !== "Sudah Dinilai"); setSubmissions(n); savePengumpulanTugas(n); }}
+          onHapusSubmission={async (id) => {
+            if (await deletePengumpulanTugas(id)) setSubmissions((p) => p.filter((s) => s.id !== id));
+          }}
+          onBersihkanSudahDinilai={async () => {
+            if (await bersihkanSubmissionSudahDinilai()) setSubmissions((p) => p.filter((s) => s.status !== "Sudah Dinilai"));
+          }}
         />
       )}
     </div>

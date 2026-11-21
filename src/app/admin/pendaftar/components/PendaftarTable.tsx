@@ -1,7 +1,7 @@
 "use client";
 
 export interface Pendaftar {
-  id: number;
+  id: string;
   namaAnak: string;
   jenisKelamin?: string;
   kelas: string;
@@ -11,7 +11,7 @@ export interface Pendaftar {
   tanggal: string;
   status: "Menunggu" | "Dikonfirmasi" | "Batal" | "Berhenti";
   paketLangganan?: string;
-  statusPembayaran?: "Lunas" | "Belum Lunas";
+  statusPembayaran?: "Lunas" | "Belum Lunas" | "";
   jatuhTempo?: string;
   tanggalMulai?: string;
 }
@@ -22,13 +22,12 @@ export default function PendaftarTable({
 }: {
   filteredList: Pendaftar[];
   onSelectPendaftar: (p: Pendaftar) => void;
-  onUpdateStatus?: (id: number, status: any) => void; // Opsional karena kini dikelola via modal
+  onUpdateStatus?: (id: string, status: Pendaftar["status"]) => void;
 }) {
   return (
     <div className="bg-slate-50 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm text-slate-600 whitespace-nowrap">
-          {/* PERBAIKAN: thead disulap menjadi Header Tebal Gradien dengan teks putih */}
           <thead className="bg-gradient-to-r from-indigo-700 to-cyan-600 text-white text-xs uppercase tracking-wider">
             <tr>
               <th className="py-4 px-4 font-semibold rounded-tl-lg">Peserta & Kelas</th>
@@ -49,8 +48,6 @@ export default function PendaftarTable({
             ) : (
               filteredList.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                  
-                  {/* Kolom 1: Peserta & Kelas */}
                   <td className="py-3 px-4">
                     <button
                       onClick={() => onSelectPendaftar(item)}
@@ -64,23 +61,24 @@ export default function PendaftarTable({
                     </div>
                   </td>
 
-                  {/* Kolom 2: Kontak Ortu */}
                   <td className="py-3 px-4">
-                    <div className="text-xs font-medium text-slate-700">{item.orangTua}</div>
-                    <a
-                      href={`https://wa.me/${item.whatsapp.replace(/^0/, "62")}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[11px] font-mono text-teal-600 hover:underline flex items-center gap-1 mt-0.5"
-                    >
-                      {item.whatsapp} 💬
-                    </a>
+                    <div className="text-xs font-medium text-slate-700">{item.orangTua || "-"}</div>
+                    {item.whatsapp ? (
+                      <a
+                        href={`https://wa.me/${item.whatsapp.replace(/^0/, "62")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] font-mono text-teal-600 hover:underline flex items-center gap-1 mt-0.5"
+                      >
+                        {item.whatsapp} 💬
+                      </a>
+                    ) : (
+                      <span className="text-[11px] text-slate-400">-</span>
+                    )}
                   </td>
 
-                  {/* Kolom 3: Tanggal */}
                   <td className="py-3 px-4 text-xs text-slate-500">{item.tanggal}</td>
 
-                  {/* Kolom 4: Status Akun */}
                   <td className="py-3 px-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                       item.status === "Dikonfirmasi" ? "bg-emerald-100 text-emerald-700" :
@@ -94,21 +92,22 @@ export default function PendaftarTable({
 
                   {/* Kolom 5: Langganan & Pembayaran */}
                   <td className="py-3 px-4">
-                    {item.status === "Dikonfirmasi" ? (
+                    {item.status !== "Batal" && (item.paketLangganan || item.statusPembayaran) ? (
                       <div>
                         <div className="text-[11px] font-bold text-slate-700">
                           {item.paketLangganan || "Belum Set Paket"}
                         </div>
-                        <div className={`text-[10px] font-bold mt-0.5 ${item.statusPembayaran === "Lunas" ? "text-emerald-600" : "text-rose-600"}`}>
-                          {item.statusPembayaran === "Lunas" ? "✓ Lunas" : "⚠ Belum Lunas"}
-                        </div>
+                        {item.statusPembayaran && (
+                          <div className={`text-[10px] font-bold mt-0.5 ${item.statusPembayaran === "Lunas" ? "text-emerald-600" : "text-rose-600"}`}>
+                            {item.statusPembayaran === "Lunas" ? "✓ Lunas" : "⚠ Belum Lunas"}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <span className="text-[11px] text-slate-400 italic">-</span>
                     )}
                   </td>
 
-                  {/* Kolom 6: Aksi Cepat */}
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-center">
                       <button
@@ -119,7 +118,6 @@ export default function PendaftarTable({
                       </button>
                     </div>
                   </td>
-
                 </tr>
               ))
             )}

@@ -11,7 +11,7 @@ export default function TambahJadwalModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSaveJadwal: (jadwalData: Omit<JadwalLes, "id">, id?: number) => void;
+  onSaveJadwal: (jadwalData: Omit<JadwalLes, "id">, id?: string) => void;
   initialData?: JadwalLes | null;
 }) {
   const [namaKelas, setNamaKelas] = useState("Kelas SD Gabungan");

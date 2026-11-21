@@ -5,10 +5,6 @@ import { Pendaftar } from "./PendaftarTable";
 import IdentitasForm from "./IdentitasForm";
 import LanggananForm from "./LanggananForm";
 
-interface PendaftarWithDate extends Pendaftar {
-  tanggalMulai?: string;
-}
-
 export default function PendaftarDetailModal({
   selectedPendaftar,
   onClose,
@@ -18,20 +14,14 @@ export default function PendaftarDetailModal({
   onClose: () => void;
   onSave: (data: Pendaftar) => void;
 }) {
-  const [formData, setFormData] = useState<PendaftarWithDate | null>(null);
+  const [formData, setFormData] = useState<Pendaftar | null>(null);
 
   const calculateJatuhTempoRaw = (startDateStr: string, paket: string) => {
-    if (!startDateStr) return "";
+    if (!startDateStr || !paket) return "";
     const date = new Date(startDateStr);
-
-    if (paket === "Per 1 Bulan") {
-      date.setMonth(date.getMonth() + 1);
-    } else if (paket === "Per 2 Bulan") {
-      date.setMonth(date.getMonth() + 2);
-    } else if (paket === "Per 3 Bulan") {
-      date.setMonth(date.getMonth() + 3);
-    }
-
+    if (paket === "Per 1 Bulan") date.setMonth(date.getMonth() + 1);
+    else if (paket === "Per 2 Bulan") date.setMonth(date.getMonth() + 2);
+    else if (paket === "Per 3 Bulan") date.setMonth(date.getMonth() + 3);
     return date.toISOString().split("T")[0];
   };
 
@@ -44,10 +34,11 @@ export default function PendaftarDetailModal({
   useEffect(() => {
     if (selectedPendaftar) {
       const todayStr = new Date().toISOString().split("T")[0];
-      setFormData({ 
-        ...selectedPendaftar, 
+      const defaultPaket = selectedPendaftar.paketLangganan || "Per 1 Bulan";
+      setFormData({
+        ...selectedPendaftar,
         tanggalMulai: selectedPendaftar.tanggalMulai || todayStr,
-        jatuhTempo: selectedPendaftar.jatuhTempo || calculateJatuhTempoRaw(todayStr, selectedPendaftar.paketLangganan || "Per 1 Bulan")
+        jatuhTempo: selectedPendaftar.jatuhTempo || calculateJatuhTempoRaw(todayStr, defaultPaket),
       });
     }
   }, [selectedPendaftar]);
@@ -62,21 +53,18 @@ export default function PendaftarDetailModal({
   const handlePaketChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const paket = e.target.value;
     const startDate = formData.tanggalMulai || new Date().toISOString().split("T")[0];
-    const jatuhTempo = calculateJatuhTempoRaw(startDate, paket);
-    setFormData((prev) => (prev ? { ...prev, paketLangganan: paket, jatuhTempo } : null));
+    setFormData((prev) => (prev ? { ...prev, paketLangganan: paket, jatuhTempo: calculateJatuhTempoRaw(startDate, paket) } : null));
   };
 
   const handleTanggalMulaiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const startDate = e.target.value;
     const paket = formData.paketLangganan || "Per 1 Bulan";
-    const jatuhTempo = calculateJatuhTempoRaw(startDate, paket);
-    setFormData((prev) => (prev ? { ...prev, tanggalMulai: startDate, jatuhTempo } : null));
+    setFormData((prev) => (prev ? { ...prev, tanggalMulai: startDate, jatuhTempo: calculateJatuhTempoRaw(startDate, paket) } : null));
   };
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
-        
         <div className="sticky top-0 bg-white px-6 py-4 flex items-center justify-between border-b border-slate-100 z-10">
           <div>
             <h3 className="font-bold text-slate-900 text-lg">Kelola Data & Langganan</h3>
@@ -87,23 +75,20 @@ export default function PendaftarDetailModal({
           </button>
         </div>
 
-        <form 
+        <form
           onSubmit={(e) => {
             e.preventDefault();
-            onSave(formData as Pendaftar);
-          }} 
+            onSave(formData);
+          }}
           className="p-6 space-y-5"
         >
-          {/* Panggil Komponen Modular Identitas */}
           <IdentitasForm formData={formData} onChange={handleChange} />
-
-          {/* Panggil Komponen Modular Langganan */}
-          <LanggananForm 
-            formData={formData} 
-            onChange={handleChange} 
-            onPaketChange={handlePaketChange} 
-            onTanggalChange={handleTanggalMulaiChange} 
-            formatDateToID={formatDateToID} 
+          <LanggananForm
+            formData={formData}
+            onChange={handleChange}
+            onPaketChange={handlePaketChange}
+            onTanggalChange={handleTanggalMulaiChange}
+            formatDateToID={formatDateToID}
           />
 
           <div className="pt-4 flex flex-col-reverse sm:flex-row items-center justify-between gap-3 border-t border-slate-100">
@@ -116,23 +101,15 @@ export default function PendaftarDetailModal({
               Chat WA 💬
             </a>
             <div className="flex gap-2 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 sm:flex-none px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition-colors cursor-pointer"
-              >
+              <button type="button" onClick={onClose} className="flex-1 sm:flex-none px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition-colors cursor-pointer">
                 Batal
               </button>
-              <button
-                type="submit"
-                className="flex-1 sm:flex-none px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs transition-colors shadow-md cursor-pointer"
-              >
+              <button type="submit" className="flex-1 sm:flex-none px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs transition-colors shadow-md cursor-pointer">
                 Simpan Perubahan
               </button>
             </div>
           </div>
         </form>
-
       </div>
     </div>
   );

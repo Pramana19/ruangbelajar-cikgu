@@ -3,69 +3,105 @@
 import { useState, useEffect } from "react";
 import { PendingTicket } from "./TicketQueue";
 
+export interface JadwalAktifOption {
+  id: string;
+  namaKelas: string;
+  mapel: string;
+  hari: string;
+  jam: string;
+}
+
 export default function TambahMateriModal({
   isOpen,
   onClose,
   onSaveTicket,
   initialData,
+  activeJadwalList = [],
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSaveTicket: (
     ticketData: Omit<PendingTicket, "id">,
     openUploadDirect: boolean,
-    editId?: number
+    editId?: string
   ) => void;
   initialData?: PendingTicket | null;
+  activeJadwalList?: JadwalAktifOption[];
 }) {
-  const [namaKelas, setNamaKelas] = useState("Kelas SD Gabungan");
+  const [selectedJadwalId, setSelectedJadwalId] = useState("");
+  const [namaKelas, setNamaKelas] = useState("");
   const [mapel, setMapel] = useState("");
-  const [hari, setHari] = useState("Rabu");
-  const [jamMulai, setJamMulai] = useState("19:00");
-  const [jamSelesai, setJamSelesai] = useState("21:00");
+  const [materiTopik, setMateriTopik] = useState("");
+  const [hari, setHari] = useState("");
+  const [jamMulai, setJamMulai] = useState("00:00");
+  const [jamSelesai, setJamSelesai] = useState("00:00");
 
   useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        setNamaKelas(initialData.namaKelas);
-        setMapel(initialData.mapel);
+    if (!isOpen) return;
 
-        // Parsing format "Senin, 19:00 - 21:00 WIB"
-        const parts = initialData.jadwal.split(",");
-        if (parts.length > 0 && parts[0].trim()) {
-          setHari(parts[0].trim());
-        }
-        const match = initialData.jadwal.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
-        if (match) {
-          setJamMulai(match[1]);
-          setJamSelesai(match[2]);
-        } else {
-          setJamMulai("19:00");
-          setJamSelesai("21:00");
-        }
-      } else {
-        setNamaKelas("Kelas SD Gabungan");
-        setMapel("");
-        setHari("Rabu");
-        setJamMulai("19:00");
-        setJamSelesai("21:00");
-      }
+    if (initialData) {
+      setSelectedJadwalId("manual");
+      setNamaKelas(initialData.namaKelas);
+      setMapel(initialData.mapel);
+      setMateriTopik(initialData.judul || "");
+
+      const parts = initialData.jadwal.split(",");
+      setHari(parts[0]?.trim() || "");
+      const match = initialData.jadwal.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+      setJamMulai(match ? match[1] : "00:00");
+      setJamSelesai(match ? match[2] : "00:00");
+    } else {
+      setSelectedJadwalId(activeJadwalList.length > 0 ? "" : "manual");
+      setNamaKelas("");
+      setMapel("");
+      setMateriTopik("");
+      setHari("");
+      setJamMulai("00:00");
+      setJamSelesai("00:00");
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, activeJadwalList.length]);
 
   if (!isOpen) return null;
 
-  const handleAction = (openUploadDirect: boolean) => {
-    if (!namaKelas.trim() || !mapel.trim()) return;
+  const isManualMode =
+    Boolean(initialData) || selectedJadwalId === "manual" || activeJadwalList.length === 0;
 
-    const formattedJadwal = `${hari}, ${jamMulai} - ${jamSelesai} WIB`;
+  const handleSelectPreset = (id: string) => {
+    setSelectedJadwalId(id);
+    const found = activeJadwalList.find((j) => j.id === id);
+    if (found) {
+      setNamaKelas(found.namaKelas);
+      setMapel(found.mapel);
+    } else {
+      setNamaKelas("");
+      setMapel("");
+    }
+  };
+
+  const handleOpenTimePicker = (e: React.MouseEvent<HTMLInputElement>) => {
+    try {
+      e.currentTarget.showPicker();
+    } catch {
+      // Fallback untuk browser yang tidak mendukung showPicker()
+    }
+  };
+
+  const isFormValid = Boolean(namaKelas.trim() && mapel.trim() && hari);
+
+  const handleAction = (openUploadDirect: boolean) => {
+    if (!isFormValid) return;
 
     onSaveTicket(
       {
         namaKelas: namaKelas.trim(),
         mapel: mapel.trim(),
-        jadwal: formattedJadwal,
+        jadwal: `${hari}, ${jamMulai} - ${jamSelesai} WIB`,
         status: initialData ? initialData.status : "Menunggu",
+        judul: materiTopik.trim() || undefined,
+        tipe: initialData?.tipe,
+        url: initialData?.url,
+        ukuran: initialData?.ukuran,
+        tanggal: initialData?.tanggal,
       },
       openUploadDirect,
       initialData?.id
@@ -84,8 +120,8 @@ export default function TambahMateriModal({
             </h3>
             <p className="text-[11px] text-slate-500 mt-0.5">
               {initialData
-                ? "Perbarui kelas, mata pelajaran, atau waktu sesi materi"
-                : "Buat slot materi baru untuk kelas reguler maupun tambahan"}
+                ? "Perbarui topik materi, hari, atau jam sesi belajar"
+                : "Pilih kelas aktif, isi topik materi, lalu tentukan hari dan jam sesi"}
             </p>
           </div>
           <button
@@ -104,26 +140,61 @@ export default function TambahMateriModal({
           }}
           className="space-y-3.5 text-xs"
         >
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Nama Kelas / Grup</label>
-            <input
-              type="text"
-              required
-              value={namaKelas}
-              onChange={(e) => setNamaKelas(e.target.value)}
-              placeholder="Contoh: Kelas SD Gabungan"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
+          {!initialData && activeJadwalList.length > 0 && (
+            <div className="p-3 rounded-xl bg-teal-50/70 border border-teal-200/80">
+              <label className="block font-bold text-teal-900 mb-1">
+                Pilih dari Jadwal Kelas Aktif
+              </label>
+              <select
+                value={selectedJadwalId}
+                onChange={(e) => handleSelectPreset(e.target.value)}
+                className="w-full px-3 py-2 border border-teal-200 rounded-lg text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">-- Pilih Kelas Aktif --</option>
+                {activeJadwalList.map((j) => (
+                  <option key={j.id} value={j.id}>
+                    {j.namaKelas} • {j.mapel}
+                  </option>
+                ))}
+                <option value="manual">✏️ Sesi Tambahan (Input Manual)...</option>
+              </select>
+            </div>
+          )}
+
+          {isManualMode && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Nama Kelas</label>
+                <input
+                  type="text"
+                  required
+                  value={namaKelas}
+                  onChange={(e) => setNamaKelas(e.target.value)}
+                  placeholder="Contoh: Kelas SD Gabungan"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Mata Pelajaran</label>
+                <input
+                  type="text"
+                  required
+                  value={mapel}
+                  onChange={(e) => setMapel(e.target.value)}
+                  placeholder="Contoh: Bahasa Inggris Dasar"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+            </div>
+          )}
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Mata Pelajaran / Topik</label>
+            <label className="block font-bold text-slate-700 mb-1">Materi</label>
             <input
               type="text"
-              required
-              value={mapel}
-              onChange={(e) => setMapel(e.target.value)}
-              placeholder="Contoh: Bahasa Indonesia - Membaca Cerita"
+              value={materiTopik}
+              onChange={(e) => setMateriTopik(e.target.value)}
+              placeholder="Contoh: Bab 1 - Vocabulary & Greetings"
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
@@ -136,13 +207,12 @@ export default function TambahMateriModal({
                 onChange={(e) => setHari(e.target.value)}
                 className="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
-                <option value="Senin">Senin</option>
-                <option value="Selasa">Selasa</option>
-                <option value="Rabu">Rabu</option>
-                <option value="Kamis">Kamis</option>
-                <option value="Jumat">Jumat</option>
-                <option value="Sabtu">Sabtu</option>
-                <option value="Minggu">Minggu</option>
+                <option value="">Pilih hari</option>
+                {["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"].map((h) => (
+                  <option key={h} value={h}>
+                    {h}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -151,8 +221,9 @@ export default function TambahMateriModal({
               <input
                 type="time"
                 value={jamMulai}
+                onClick={handleOpenTimePicker}
                 onChange={(e) => setJamMulai(e.target.value)}
-                className="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs font-mono bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs font-mono bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
               />
             </div>
 
@@ -161,8 +232,9 @@ export default function TambahMateriModal({
               <input
                 type="time"
                 value={jamSelesai}
+                onClick={handleOpenTimePicker}
                 onChange={(e) => setJamSelesai(e.target.value)}
-                className="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs font-mono bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs font-mono bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
               />
             </div>
           </div>
@@ -179,7 +251,7 @@ export default function TambahMateriModal({
               <button
                 type="button"
                 onClick={() => handleAction(false)}
-                disabled={!namaKelas.trim() || !mapel.trim()}
+                disabled={!isFormValid}
                 className="w-full sm:w-auto px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 text-white font-bold rounded-lg text-xs transition-colors cursor-pointer"
               >
                 Simpan Perubahan ✓
@@ -189,7 +261,7 @@ export default function TambahMateriModal({
                 <button
                   type="button"
                   onClick={() => handleAction(false)}
-                  disabled={!namaKelas.trim() || !mapel.trim()}
+                  disabled={!isFormValid}
                   className="w-full sm:w-auto px-4 py-2 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white font-bold rounded-lg text-xs transition-colors cursor-pointer"
                 >
                   + Masukkan Antrian
@@ -197,7 +269,7 @@ export default function TambahMateriModal({
                 <button
                   type="button"
                   onClick={() => handleAction(true)}
-                  disabled={!namaKelas.trim() || !mapel.trim()}
+                  disabled={!isFormValid}
                   className="w-full sm:w-auto px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 text-white font-bold rounded-lg text-xs transition-colors cursor-pointer"
                 >
                   Lanjut Upload File →

@@ -1,7 +1,7 @@
 "use client";
 
 export interface JadwalLes {
-  id: number;
+  id: string;
   namaKelas: string;
   targetPeserta: string;
   hari: string;
@@ -17,11 +17,10 @@ export default function JadwalTable({
   onEdit,
 }: {
   jadwalList: JadwalLes[];
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
   onUpdate: (updatedItem: JadwalLes) => void;
   onEdit: (item: JadwalLes) => void;
 }) {
-  // Fungsi toggle cepat Status Aktif <-> Libur
   const handleToggleStatus = (item: JadwalLes) => {
     const nextStatus = item.status === "Aktif" ? "Libur" : "Aktif";
     onUpdate({ ...item, status: nextStatus });
@@ -53,24 +52,20 @@ export default function JadwalTable({
 
                 return (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    {/* HARI & JAM */}
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-slate-900">{item.hari}</div>
                       <div className="text-xs text-slate-500 font-mono">{item.jam}</div>
                     </td>
 
-                    {/* NAMA KELAS & TARGET PESERTA */}
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-slate-800">{item.namaKelas}</div>
                       <div className="text-xs text-teal-600 font-medium">{item.targetPeserta}</div>
                     </td>
 
-                    {/* MATA PELAJARAN */}
                     <td className="py-3.5 px-4">
                       <div className="text-xs font-medium text-slate-700">{item.mapel}</div>
                     </td>
 
-                    {/* STATUS SESI (MODEL FLOWBITE SWITCH TOGGLE - TEKS TERKUNCI ANTI GESER) */}
                     <td className="py-3.5 px-4">
                       {item.status === "Selesai" ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
@@ -99,7 +94,6 @@ export default function JadwalTable({
                       )}
                     </td>
 
-                    {/* AKSI (EDIT VIA MODAL / HAPUS) */}
                     <td className="py-3.5 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
