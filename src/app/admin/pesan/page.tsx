@@ -1,9 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ListPesan from "./components/ListPesan";
 import BalasPesanModal from "./components/BalasPesanModal";
 import KirimPesanModal from "./components/KirimPesanModal";
-import { getTicketsFromStorage, LampiranFile, PesanTicket, saveTicketsToStorage } from "@/lib/pesanStorage";
+import {
+  bersihkanPesanSelesai,
+  deletePesanTicket,
+  fetchPesanTickets,
+  insertPesanTicket,
+  LampiranFile,
+  PesanTicket,
+  updatePesanTicket,
+} from "@/lib/pesanStorage";
 
 export default function AdminPesanPage() {
   const [filterStatus, setFilterStatus] = useState("Semua");
@@ -12,64 +20,110 @@ export default function AdminPesanPage() {
   const [isKirimModalOpen, setIsKirimModalOpen] = useState(false);
   const [hariCleanup, setHariCleanup] = useState("30");
   const [tickets, setTickets] = useState<PesanTicket[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const sync = () => setTickets(getTicketsFromStorage());
-    sync();
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
+  const loadTickets = useCallback(async () => {
+    setIsLoading(true);
+    setTickets(await fetchPesanTickets());
+    setIsLoading(false);
   }, []);
 
-  const updateTickets = (next: PesanTicket[]) => {
-    setTickets(next);
-    saveTicketsToStorage(next);
-  };
+  useEffect(() => {
+    loadTickets();
+  }, [loadTickets]);
 
-  // Saat Cikgu membuka modal diskusi: tandai pesan siswa sudah dibaca (✓✓ biru) & ubah status Belum Dibalas -> Dibaca
-  const handleOpenDiskusi = (ticket: PesanTicket) => {
-    const updated = tickets.map((t) => {
-      if (t.id !== ticket.id) return t;
-      const markedThread = (t.thread || []).map((c) => (c.pengirim === "Siswa" ? { ...c, isRead: true } : c));
-      return {
-        ...t,
-        status: t.status === "Belum Dibalas" ? ("Dibaca" as const) : t.status,
-        thread: markedThread,
-      };
+  const handleOpenDiskusi = async (ticket: PesanTicket) => {
+    const markedThread = (ticket.thread || []).map((c) =>
+      c.pengirim === "Siswa" ? { ...c, isRead: true } : c
+    );
+    const nextStatus = ticket.status === "Belum Dibalas" ? ("Dibaca" as const) : ticket.status;
+
+    const updatedTicket: PesanTicket = {
+      ...ticket,
+      status: nextStatus,
+      thread: markedThread,
+    };
+
+    setTickets((prev) => prev.map((t) => (t.id === ticket.id ? updatedTicket : t)));
+    setSelectedTicket(updatedTicket);
+
+    await updatePesanTicket(ticket.id, {
+      status: nextStatus,
+      thread: markedThread,
     });
-    updateTickets(updated);
-    setSelectedTicket(updated.find((t) => t.id === ticket.id) || ticket);
   };
 
   const filteredTickets = tickets.filter((t) => {
     const matchStatus = filterStatus === "Semua" || t.status === filterStatus;
     const q = search.toLowerCase();
-    return matchStatus && (t.siswa.toLowerCase().includes(q) || t.pesan.toLowerCase().includes(q) || t.id.toLowerCase().includes(q));
+    return (
+      matchStatus &&
+      (t.siswa.toLowerCase().includes(q) ||
+        t.pesan.toLowerCase().includes(q) ||
+        t.id.toLowerCase().includes(q))
+    );
   });
 
-  const submitBalasan = (id: string, balasanText: string, lampiran?: LampiranFile | null) => {
+  const submitBalasan = async (id: string, balasanText: string, lampiran?: LampiranFile | null) => {
+    const target = tickets.find((t) => t.id === id);
+    if (!target) return;
+
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
-    updateTickets(
-      tickets.map((t) => {
-        if (t.id !== id) return t;
-        const baseThread = t.thread?.length
-          ? t.thread
-          : [{ id: "init", pengirim: t.arah === "Keluar" ? ("Cikgu" as const) : ("Siswa" as const), namaPengirim: t.siswa, waktu: t.tanggal, teks: t.pesan, lampiran: t.lampiran, isRead: true }];
-        return {
-          ...t,
-          status: "Selesai",
-          balasan: balasanText,
-          thread: [...baseThread, { id: `C-${Date.now()}`, pengirim: "Cikgu", namaPengirim: "Cikgu Admin", waktu: now, teks: balasanText, lampiran, isRead: false }],
-        };
-      })
+    const baseThread = target.thread?.length
+      ? target.thread
+      : [
+          {
+            id: "init",
+            pengirim: target.arah === "Keluar" ? ("Cikgu" as const) : ("Siswa" as const),
+            namaPengirim: target.siswa,
+            waktu: target.tanggal,
+            teks: target.pesan,
+            lampiran: target.lampiran,
+            isRead: true,
+          },
+        ];
+
+    const nextThread = [
+      ...baseThread,
+      {
+        id: `C-${Date.now()}`,
+        pengirim: "Cikgu" as const,
+        namaPengirim: "Cikgu Admin",
+        waktu: now,
+        teks: balasanText,
+        lampiran,
+        isRead: false,
+      },
+    ];
+
+    const ok = await updatePesanTicket(id, {
+      status: "Selesai",
+      balasan: balasanText,
+      thread: nextThread,
+    });
+
+    if (!ok) return alert("Gagal mengirim balasan.");
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.id === id ? { ...t, status: "Selesai", balasan: balasanText, thread: nextThread } : t
+      )
     );
     setSelectedTicket(null);
   };
 
-  const handleKirimPesanBaru = (data: { penerimaLabel: string; kelasLabel: string; isSiaran: boolean; isiPesan: string; lampiran?: LampiranFile | null }) => {
+  const handleKirimPesanBaru = async (data: {
+    siswaId?: string;
+    penerimaLabel: string;
+    kelasLabel: string;
+    isSiaran: boolean;
+    isiPesan: string;
+    lampiran?: LampiranFile | null;
+  }) => {
     const today = new Date().toISOString().split("T")[0];
     const newMsg: PesanTicket = {
       id: `MSG-${Math.floor(1000 + Math.random() * 9000)}`,
       tanggal: today,
+      siswaId: data.siswaId,
       siswa: data.penerimaLabel,
       kelas: data.kelasLabel,
       pesan: data.isiPesan,
@@ -79,9 +133,22 @@ export default function AdminPesanPage() {
       isSiaran: data.isSiaran,
       readBySiswa: [],
       lampiran: data.lampiran,
-      thread: [{ id: `C-${Date.now()}`, pengirim: "Cikgu", namaPengirim: "Cikgu Admin", waktu: today, teks: data.isiPesan, lampiran: data.lampiran, isRead: false }],
+      thread: [
+        {
+          id: `C-${Date.now()}`,
+          pengirim: "Cikgu",
+          namaPengirim: "Cikgu Admin",
+          waktu: today,
+          teks: data.isiPesan,
+          lampiran: data.lampiran,
+          isRead: false,
+        },
+      ],
     };
-    updateTickets([newMsg, ...tickets]);
+
+    const saved = await insertPesanTicket(newMsg);
+    if (!saved) return alert("Gagal mengirim pesan baru.");
+    setTickets((prev) => [saved, ...prev]);
   };
 
   return (
@@ -99,7 +166,10 @@ export default function AdminPesanPage() {
           </select>
           <button
             type="button"
-            onClick={() => confirm(`Bersihkan aduan 'Selesai' > ${hariCleanup} hari?`) && updateTickets(tickets.filter((t) => t.status !== "Selesai"))}
+            onClick={async () => {
+              if (!confirm(`Bersihkan aduan 'Selesai' > ${hariCleanup} hari?`)) return;
+              if (await bersihkanPesanSelesai(Number(hariCleanup))) await loadTickets();
+            }}
             className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg text-xs cursor-pointer border border-rose-200"
           >
             Bersihkan
@@ -130,7 +200,18 @@ export default function AdminPesanPage() {
         </button>
       </div>
 
-      <ListPesan tickets={filteredTickets} onBalas={handleOpenDiskusi} onDelete={(id) => updateTickets(tickets.filter((t) => t.id !== id))} />
+      {isLoading ? (
+        <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-xs text-slate-500">Memuat daftar pesan & aduan...</div>
+      ) : (
+        <ListPesan
+          tickets={filteredTickets}
+          onBalas={handleOpenDiskusi}
+          onDelete={async (id) => {
+            if (await deletePesanTicket(id)) setTickets((prev) => prev.filter((t) => t.id !== id));
+          }}
+        />
+      )}
+
       {selectedTicket && <BalasPesanModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} onSubmit={submitBalasan} />}
       <KirimPesanModal isOpen={isKirimModalOpen} onClose={() => setIsKirimModalOpen(false)} onKirimPesan={handleKirimPesanBaru} />
     </div>

@@ -1,93 +1,181 @@
 "use client";
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import FormAduan from "./components/FormAduan";
 import FAQList from "./components/FAQList";
 import RiwayatAduan from "./components/RiwayatAduan";
 import PesanDariCikgu from "./components/PesanDariCikgu";
-import { getTicketsFromStorage, LampiranFile, PesanTicket, saveTicketsToStorage } from "@/lib/pesanStorage";
-
-const CURRENT_SISWA = "Siti Rahma";
-const CURRENT_KELAS = "Kelas 1 SD";
+import {
+  fetchPesanTickets,
+  insertPesanTicket,
+  LampiranFile,
+  PesanTicket,
+  updatePesanTicket,
+} from "@/lib/pesanStorage";
 
 export default function BantuanPage() {
   const [activeTab, setActiveTab] = useState<"kirim" | "riwayat" | "masuk">("kirim");
+  const [profile, setProfile] = useState<{ id: string; nama: string; kelas: string } | null>(null);
   const [allTickets, setAllTickets] = useState<PesanTicket[]>([]);
 
   useEffect(() => {
-    const sync = () => setAllTickets(getTicketsFromStorage());
-    sync();
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
+    const loadData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id, nama_lengkap, kelas")
+          .eq("id", user.id)
+          .single();
+        if (prof) {
+          setProfile({
+            id: prof.id,
+            nama: prof.nama_lengkap || "Peserta",
+            kelas: prof.kelas || "Umum",
+          });
+        }
+      }
+      setAllTickets(await fetchPesanTickets());
+    };
+    loadData();
   }, []);
 
+  const currentSiswa = profile?.nama || "";
+  const currentKelas = profile?.kelas || "Umum";
+
   const diskusiPribadi = allTickets.filter(
-    (t) => !t.isSiaran && !t.hiddenForSiswa && t.siswa.includes(CURRENT_SISWA)
+    (t) =>
+      !t.isSiaran &&
+      !t.hiddenForSiswa &&
+      ((profile?.id && t.siswaId === profile.id) ||
+        (currentSiswa && t.siswa.toLowerCase().includes(currentSiswa.toLowerCase())))
   );
   const siaranCikgu = allTickets.filter((t) => t.isSiaran);
-  const unreadSiaranCount = siaranCikgu.filter((t) => !t.readBySiswa?.includes(CURRENT_SISWA)).length;
+  const unreadSiaranCount = siaranCikgu.filter(
+    (t) => currentSiswa && !t.readBySiswa?.includes(currentSiswa)
+  ).length;
 
-  const handleOpenTabRiwayat = () => {
+  const handleOpenTabRiwayat = async () => {
     setActiveTab("riwayat");
-    const next = allTickets.map((t) => {
-      if (t.isSiaran || !t.siswa.includes(CURRENT_SISWA)) return t;
-      const updatedThread = (t.thread || []).map((c) => (c.pengirim === "Cikgu" ? { ...c, isRead: true } : c));
-      return { ...t, thread: updatedThread };
-    });
-    setAllTickets(next);
-    saveTicketsToStorage(next);
+    const toMark = diskusiPribadi.filter((t) =>
+      (t.thread || []).some((c) => c.pengirim === "Cikgu" && !c.isRead)
+    );
+    if (toMark.length === 0) return;
+
+    const updatedMap = new Map<string, PesanTicket["thread"]>();
+    for (const item of toMark) {
+      const marked = (item.thread || []).map((c) =>
+        c.pengirim === "Cikgu" ? { ...c, isRead: true } : c
+      );
+      updatedMap.set(item.id, marked);
+      await updatePesanTicket(item.id, { thread: marked });
+    }
+
+    setAllTickets((prev) =>
+      prev.map((t) => (updatedMap.has(t.id) ? { ...t, thread: updatedMap.get(t.id) } : t))
+    );
   };
 
-  const handleTandaiSiaranDibaca = (siaranId: string) => {
-    const next = allTickets.map((t) => {
-      if (t.id !== siaranId) return t;
-      const readers = t.readBySiswa || [];
-      return readers.includes(CURRENT_SISWA) ? t : { ...t, readBySiswa: [...readers, CURRENT_SISWA] };
-    });
-    setAllTickets(next);
-    saveTicketsToStorage(next);
+  const handleTandaiSiaranDibaca = async (siaranId: string) => {
+    if (!currentSiswa) return;
+    const target = allTickets.find((t) => t.id === siaranId);
+    if (!target) return;
+
+    const readers = target.readBySiswa || [];
+    if (readers.includes(currentSiswa)) return;
+
+    const nextReaders = [...readers, currentSiswa];
+    setAllTickets((prev) =>
+      prev.map((t) => (t.id === siaranId ? { ...t, readBySiswa: nextReaders } : t))
+    );
+    await updatePesanTicket(siaranId, { read_by_siswa: nextReaders });
   };
 
-  const handleAduanBaru = (pesanBaru: string, lampiran?: LampiranFile | null) => {
+  const handleAduanBaru = async (pesanBaru: string, lampiran?: LampiranFile | null) => {
+    if (!profile) return;
     const today = new Date().toISOString().split("T")[0];
     const newTicket: PesanTicket = {
       id: `TKT-${Math.floor(1004 + Math.random() * 8999)}`,
       tanggal: today,
-      siswa: CURRENT_SISWA,
-      kelas: CURRENT_KELAS,
+      siswaId: profile.id,
+      siswa: currentSiswa,
+      kelas: currentKelas,
       pesan: pesanBaru,
       status: "Belum Dibalas",
       balasan: "",
       arah: "Masuk",
       lampiran,
-      thread: [{ id: `C-${Date.now()}`, pengirim: "Siswa", namaPengirim: CURRENT_SISWA, waktu: today, teks: pesanBaru, lampiran, isRead: false }],
+      thread: [
+        {
+          id: `C-${Date.now()}`,
+          pengirim: "Siswa",
+          namaPengirim: currentSiswa,
+          waktu: today,
+          teks: pesanBaru,
+          lampiran,
+          isRead: false,
+        },
+      ],
     };
-    const next = [newTicket, ...allTickets];
-    setAllTickets(next);
-    saveTicketsToStorage(next);
+
+    const saved = await insertPesanTicket(newTicket);
+    if (!saved) return alert("Gagal mengirim aduan. Silakan coba lagi.");
+    setAllTickets((prev) => [saved, ...prev]);
     setActiveTab("riwayat");
   };
 
-  const handleBalasLanjutan = (ticketId: string, teks: string, lampiran?: LampiranFile | null) => {
+  const handleBalasLanjutan = async (ticketId: string, teks: string, lampiran?: LampiranFile | null) => {
+    const target = allTickets.find((t) => t.id === ticketId);
+    if (!target) return;
+
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
-    const next = allTickets.map((t) => {
-      if (t.id !== ticketId) return t;
-      const base = t.thread?.length ? t.thread : [{ id: "init", pengirim: t.arah === "Keluar" ? ("Cikgu" as const) : ("Siswa" as const), namaPengirim: t.siswa, waktu: t.tanggal, teks: t.pesan, lampiran: t.lampiran, isRead: true }];
-      return {
-        ...t,
-        status: "Belum Dibalas" as const,
-        thread: [...base, { id: `C-${Date.now()}`, pengirim: "Siswa" as const, namaPengirim: CURRENT_SISWA, waktu: now, teks, lampiran, isRead: false }],
-      };
+    const base = target.thread?.length
+      ? target.thread
+      : [
+          {
+            id: "init",
+            pengirim: target.arah === "Keluar" ? ("Cikgu" as const) : ("Siswa" as const),
+            namaPengirim: target.siswa,
+            waktu: target.tanggal,
+            teks: target.pesan,
+            lampiran: target.lampiran,
+            isRead: true,
+          },
+        ];
+
+    const nextThread = [
+      ...base,
+      {
+        id: `C-${Date.now()}`,
+        pengirim: "Siswa" as const,
+        namaPengirim: currentSiswa,
+        waktu: now,
+        teks,
+        lampiran,
+        isRead: false,
+      },
+    ];
+
+    const ok = await updatePesanTicket(ticketId, {
+      status: "Belum Dibalas",
+      thread: nextThread,
     });
-    setAllTickets(next);
-    saveTicketsToStorage(next);
+    if (!ok) return alert("Gagal mengirim balasan lanjutan.");
+
+    setAllTickets((prev) =>
+      prev.map((t) =>
+        t.id === ticketId ? { ...t, status: "Belum Dibalas", thread: nextThread } : t
+      )
+    );
   };
 
-  const handleHapusRiwayat = (ticketId: string) => {
-    const next = allTickets.map((t) =>
-      t.id === ticketId ? { ...t, hiddenForSiswa: true } : t
-    );
-    setAllTickets(next);
-    saveTicketsToStorage(next);
+  const handleHapusRiwayat = async (ticketId: string) => {
+    const ok = await updatePesanTicket(ticketId, { hidden_for_siswa: true });
+    if (ok) {
+      setAllTickets((prev) =>
+        prev.map((t) => (t.id === ticketId ? { ...t, hiddenForSiswa: true } : t))
+      );
+    }
   };
 
   const handleBalasSiaran = (siaran: PesanTicket, teksBalasan: string) => {
@@ -145,7 +233,7 @@ export default function BantuanPage() {
       {activeTab === "masuk" && (
         <PesanDariCikgu
           pesanList={siaranCikgu}
-          currentSiswa={CURRENT_SISWA}
+          currentSiswa={currentSiswa}
           onTandaiDibaca={handleTandaiSiaranDibaca}
           onBalasSiaran={handleBalasSiaran}
         />

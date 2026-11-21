@@ -1,15 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import { bacaFileLampiran, LampiranFile } from "@/lib/pesanStorage";
 
-const DAFTAR_PESERTA = [
-  { id: "SIS-01", nama: "Rian Hidayat", kelas: "Kelas 3 SD" },
-  { id: "SIS-02", nama: "Siti Rahma", kelas: "Kelas 1 SD" },
-  { id: "SIS-03", nama: "Budi Santoso", kelas: "Kelas 5 SD" },
-  { id: "SIS-04", nama: "Aisyah Putri", kelas: "Kelas 4 SD" },
-  { id: "SIS-05", nama: "Dimas Pratama", kelas: "Kelas 6 SD" },
-  { id: "SIS-06", nama: "Nabila Zahra", kelas: "Kelas 2 SD" },
-];
+interface PesertaOption {
+  id: string;
+  nama: string;
+  kelas: string;
+}
 
 export default function KirimPesanModal({
   isOpen,
@@ -18,18 +16,53 @@ export default function KirimPesanModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onKirimPesan: (data: { penerimaLabel: string; kelasLabel: string; isSiaran: boolean; isiPesan: string; lampiran?: LampiranFile | null }) => void;
+  onKirimPesan: (data: {
+    siswaId?: string;
+    penerimaLabel: string;
+    kelasLabel: string;
+    isSiaran: boolean;
+    isiPesan: string;
+    lampiran?: LampiranFile | null;
+  }) => void;
 }) {
+  const [pesertaList, setPesertaList] = useState<PesertaOption[]>([]);
+  const [isLoadingPeserta, setIsLoadingPeserta] = useState(false);
   const [searchPeserta, setSearchPeserta] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectAll, setIsSelectAll] = useState(false);
   const [isiPesan, setIsPesan] = useState("");
   const [lampiran, setLampiran] = useState<LampiranFile | null>(null);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const loadPeserta = async () => {
+      setIsLoadingPeserta(true);
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, nama_lengkap, kelas")
+        .eq("role", "peserta")
+        .order("nama_lengkap", { ascending: true });
+
+      if (data) {
+        setPesertaList(
+          data.map((p) => ({
+            id: p.id,
+            nama: p.nama_lengkap || "Peserta",
+            kelas: p.kelas || "Umum",
+          }))
+        );
+      }
+      setIsLoadingPeserta(false);
+    };
+    loadPeserta();
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const filteredPeserta = DAFTAR_PESERTA.filter(
-    (p) => p.nama.toLowerCase().includes(searchPeserta.toLowerCase()) || p.kelas.toLowerCase().includes(searchPeserta.toLowerCase())
+  const filteredPeserta = pesertaList.filter(
+    (p) =>
+      p.nama.toLowerCase().includes(searchPeserta.toLowerCase()) ||
+      p.kelas.toLowerCase().includes(searchPeserta.toLowerCase())
   );
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,15 +83,16 @@ export default function KirimPesanModal({
     e.preventDefault();
     if (!isiPesan.trim() || (!isSelectAll && selectedIds.length === 0)) return;
 
-    const isAll = isSelectAll || selectedIds.length === DAFTAR_PESERTA.length;
-    const target = DAFTAR_PESERTA.find((p) => p.id === selectedIds[0]);
+    const isAll = isSelectAll || (pesertaList.length > 0 && selectedIds.length === pesertaList.length);
+    const target = pesertaList.find((p) => p.id === selectedIds[0]);
     const penerimaLabel = isAll
-      ? `Semua Peserta (${DAFTAR_PESERTA.length} Siswa)`
+      ? `Semua Peserta (${pesertaList.length} Siswa)`
       : selectedIds.length === 1
       ? target!.nama
       : `${target!.nama} +${selectedIds.length - 1} lainnya`;
 
     onKirimPesan({
+      siswaId: !isAll && selectedIds.length === 1 ? target!.id : undefined,
       penerimaLabel,
       kelasLabel: isAll ? "Siaran Global" : selectedIds.length === 1 ? target!.kelas : "Pesan Grup",
       isSiaran: isAll,
@@ -84,14 +118,14 @@ export default function KirimPesanModal({
                 checked={isSelectAll}
                 onChange={(e) => {
                   setIsSelectAll(e.target.checked);
-                  setSelectedIds(e.target.checked ? DAFTAR_PESERTA.map((p) => p.id) : []);
+                  setSelectedIds(e.target.checked ? pesertaList.map((p) => p.id) : []);
                 }}
                 className="w-4 h-4 rounded text-indigo-600 cursor-pointer"
               />
               <span className="font-bold text-indigo-950">📢 Siaran ke Seluruh Peserta (Select All)</span>
             </label>
             <span className="bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-              {isSelectAll ? DAFTAR_PESERTA.length : selectedIds.length} Dipilih
+              {isSelectAll ? pesertaList.length : selectedIds.length} Dipilih
             </span>
           </div>
 
@@ -105,23 +139,29 @@ export default function KirimPesanModal({
               className="w-full px-3 py-2 mb-2 border border-slate-200 rounded-lg bg-slate-50 disabled:opacity-50"
             />
             <div className={`max-h-32 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 ${isSelectAll ? "opacity-50 pointer-events-none" : ""}`}>
-              {filteredPeserta.map((p) => (
-                <label key={p.id} className="flex items-center justify-between px-3 py-2 hover:bg-slate-50 cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={isSelectAll || selectedIds.includes(p.id)}
-                      onChange={() => {
-                        setIsSelectAll(false);
-                        setSelectedIds((prev) => (prev.includes(p.id) ? prev.filter((i) => i !== p.id) : [...prev, p.id]));
-                      }}
-                      className="rounded text-teal-600 cursor-pointer"
-                    />
-                    <span className="font-semibold text-slate-800">{p.nama}</span>
-                  </div>
-                  <span className="text-[11px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded">{p.kelas}</span>
-                </label>
-              ))}
+              {isLoadingPeserta ? (
+                <div className="p-3 text-center text-slate-400">Memuat daftar peserta...</div>
+              ) : filteredPeserta.length === 0 ? (
+                <div className="p-3 text-center text-slate-400">Tidak ada peserta ditemukan.</div>
+              ) : (
+                filteredPeserta.map((p) => (
+                  <label key={p.id} className="flex items-center justify-between px-3 py-2 hover:bg-slate-50 cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={isSelectAll || selectedIds.includes(p.id)}
+                        onChange={() => {
+                          setIsSelectAll(false);
+                          setSelectedIds((prev) => (prev.includes(p.id) ? prev.filter((i) => i !== p.id) : [...prev, p.id]));
+                        }}
+                        className="rounded text-teal-600 cursor-pointer"
+                      />
+                      <span className="font-semibold text-slate-800">{p.nama}</span>
+                    </div>
+                    <span className="text-[11px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded">{p.kelas}</span>
+                  </label>
+                ))
+              )}
             </div>
           </div>
 
